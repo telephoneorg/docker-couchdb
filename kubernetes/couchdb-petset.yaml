@@ -1,0 +1,88 @@
+apiVersion: apps/v1alpha1
+kind: PetSet
+metadata:
+  name: couchdb
+spec:
+  serviceName: couchdb
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: couchdb
+        project: valuphone
+        environment: production
+      annotations:
+        pod.alpha.kubernetes.io/initialized: "true"
+        pod.alpha.kubernetes.io/init-containers: '[
+          {
+            "name": "register-service",
+            "image": "callforamerica/init-register-service",
+            "imagePullPolicy": "Always",
+            "args": ["couchdb"],
+            "volumeMounts": [
+              {
+                "name": "couchdb-data",
+                "mountPath": "/mnt/couchdb-data"
+              }
+            ]
+          }
+        ]'
+    spec:
+      containers:
+        - name: couchdb
+          image: callforamerica/couchdb
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: erlang-cookie-secret
+              readOnly: true
+              mountPath: /etc/secrets/erlang
+            - name: couchdb-data
+              mountPath: /mnt/couchdb-data
+          env:
+            - name: MOUNT_PERSISTENT_VOLUME
+              value: 'true'
+            - name: COUCHDB_LOG_LEVEL
+              value: info
+          ports:
+            - name: data
+              protocol: TCP
+              containerPort: 5984
+            - name: admin
+              protocol: TCP
+              containerPort: 5986
+          resources:
+            requests:
+              cpu: 2
+              memory: 2G
+            # limits:
+            #   cpu: 2
+            #   memory: 4G
+          readinessProbe:
+            httpGet:
+              path: /_up
+              port: 5984
+            initialDelaySeconds: 10
+            timeoutSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /_up
+              port: 5984
+            initialDelaySeconds: 30
+            timeoutSeconds: 15
+          imagePullPolicy: Always
+      volumes:
+        - name: erlang-cookie-secret
+          secret:
+            secretName: erlang-cookie
+      restartPolicy: Always
+  volumeClaimTemplates:
+    - metadata:
+        name: couchdb-data
+        annotations:
+          volume.alpha.kubernetes.io/storage-class: anything
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 100Gi
