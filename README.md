@@ -14,12 +14,12 @@ Now using a register-service init-container for automatic registration/clusterin
 
 [todo] more intro
 
+
 ## Environments
 
 ### Build
 
 ### Run
-
 
 
 ## Instructions
@@ -36,6 +36,8 @@ Now using a register-service init-container for automatic registration/clusterin
 * Create the Service in `couchdb-service.yaml`
 * Create the petset in `couchdb-service.yaml`
 
+
 ## Issues
+
 
 ## Todos

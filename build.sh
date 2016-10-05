@@ -14,15 +14,25 @@ echo "Creating user and group for $user ..."
 useradd --home-dir ~ --create-home --shell=/bin/bash --user-group $user
 
 
+echo "Installing erlang and $app repos ..."
+apt-key adv --keyserver ha.pool.sks-keyservers.net --recv-keys 434975BD900CCBE4F7EE1B1ED208507CA14F4FCA
+echo 'deb http://packages.erlang-solutions.com/debian jessie contrib' > /etc/apt/sources.list.d/erlang.list
+
+
 echo "Installing essentials ..."
 apt-get update
-apt-get install -y curl ca-certificates
+apt-get install -y curl
+
+
+echo "Calculating versions ..."
+apt_erlang_version=$(apt-cache show erlang-nox | grep ^Version | grep $ERLANG_VERSION | sort -n | head -1 | awk '{print $2}')
+echo "erlang: $apt_erlang_version"
 
 
 echo "Installing dependencies ..."
 apt-get -y install \
     build-essential \
-    erlang \
+    erlang=$apt_erlang_version \
     libcurl4-openssl-dev \
     libicu-dev \
     libmozjs185-dev \
@@ -45,7 +55,6 @@ cd $_
         cd ../..
     cd / && rm -rf $OLDPWD
 
-mkdir -p ~/bin
 
 echo "Purging unneeded ..."
 apt-get purge -y --auto-remove \

@@ -3,12 +3,12 @@ FROM callforamerica/debian
 MAINTAINER joe <joe@valuphone.com>
 
 LABEL   lang.name="erlang" \
-        lang.version="17.3"
+        lang.version="19.1"
 
 LABEL   app.name="couchdb" \
         app.version="2.0.0"
 
-ENV     ERLANG_VERSION=17.3 \
+ENV     ERLANG_VERSION=19.1 \
         COUCHDB_VERSION=2.0.0
 
 ENV     HOME=/opt/couchdb
