@@ -1,0 +1,50 @@
+CouchDB Cluster init commands
+
+curl -X POST -H "Content-Type: application/json" http://couchdb-a.local:5984/_cluster_setup -d '{"action": "enable_cluster", "username": "admin", "password": "password"}'
+
+curl -X POST -H "Content-Type: application/json" http://couchdb-b.local:5984/_cluster_setup -d '{"action": "enable_cluster", "username": "admin", "password": "password"}'
+
+curl -X POST -H "Content-Type: application/json" http://couchdb-c.local:5984/_cluster_setup -d '{"action": "enable_cluster", "username": "admin", "password": "password"}'
+
+curl -X POST http://admin:secret@couchdb-a.local:5984/_cluster_setup \
+    -H 'Content-Type: application/json' \
+    -d '{"action": "add_node", "host": "couchdb-c.local", "username": "admin", "password": "secret"}' 
+
+curl -X POST -H 'Content-Type: application/json' -d '{"action": "add_node", "host": "couchdb-c.local", "username": "admin", "password": "password"}' http://admin:password@localhost:5984/_cluster_setup
+
+curl -X POST -H "Content-Type: application/json" http://admin:password@localhost:5984/_cluster_setup -d '{"action": "finish_cluster"}'
+
+
+# CouchDB Cluster minimal init without auth
+
+curl -X PUT "http://localhost:5986/_nodes/couchdb@couchdb-b.local" -d {}
+curl -X PUT "http://localhost:5986/_nodes/couchdb@couchdb-c.local" -d {}
+
+curl -X POST -H 'Content-Type: application/json' http://localhost:5984/_cluster_setup -d '{"action": "finish_cluster"}'
+
+
+curl localhost:5984/_all_dbs
+["_global_changes","_metadata","_replicator","_users"]
+
+curl localhost:5986/_all_dbs
+["_dbs","_nodes","_replicator","_users","shards/00000000-3fffffff/_global_changes.1474690981","shards/00000000-3fffffff/_metadata.1474690981","shards/00000000-3fffffff/_replicator.1474690981","shards/00000000-3fffffff/_users.1474690980","shards/40000000-7fffffff/_global_changes.1474690981","shards/40000000-7fffffff/_metadata.1474690981","shards/40000000-7fffffff/_replicator.1474690981","shards/40000000-7fffffff/_users.1474690980","shards/80000000-bfffffff/_global_changes.1474690981","shards/80000000-bfffffff/_metadata.1474690981","shards/80000000-bfffffff/_replicator.1474690981","shards/80000000-bfffffff/_users.1474690980","shards/c0000000-ffffffff/_global_changes.1474690981","shards/c0000000-ffffffff/_metadata.1474690981","shards/c0000000-ffffffff/_replicator.1474690981","shards/c0000000-ffffffff/_users.1474690980"]
+
+# CouchDB Cluster single node init
+
+curl -X POST -H 'Content-Type: application/json' http://localhost:5984/_cluster_setup -d '{"action": "finish_cluster"}'
+
+
+# Let's test if you can create the 
+
+curl -X POST -H 'Content-Type: application/json' http://localhost:5984/_cluster_setup -d '{"action": "finish_cluster"}'
+
+curl -X POST -H 'Content-Type: application/json' http://couchdb-b.local:5984/_cluster_setup -d '{"action": "finish_cluster"}'
+
+curl -X POST -H 'Content-Type: application/json' http://couchdb-c.local:5984/_cluster_setup -d '{"action": "finish_cluster"}'
+
+add_node() 
+{
+    local rhost="$1"
+    [[ -z $rhost ]] && return 1
+    curl -sS -X POST $shost/_cluster_setup -H 'Content-Type: application/json' -d "{\"action\": \"add_node\", \"host\": \"$rhost\", \"username\": \"$COUCHDB_ADMIN_USER\", \"password\": \"$COUCHDB_ADMIN_PASS\"}" > /dev/null 2>&1
+ }

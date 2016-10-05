@@ -1,16 +1,22 @@
-#!/bin/bash
+#!/bin/bash -l
 
 set -e
 
-. ~/.bashrc
+app=couchdb
+user=$app
 
-: ${COUCHDB_THREADS:=25}
+: ${ERLANG_THREADS:=25}
 
 # options: debug info warning error none
 : ${COUCHDB_LOG_LEVEL:=info}
+: ${COUCHDB_LOG_COLOR:=true}
 
-: ${COUCHDB_DATA_PATH:=/opt/couchdb/data}
+: ${COUCHDB_DATA_PATH:=/data/$app}
 : ${COUCHDB_BIND_ADDR:=0.0.0.0}
+
+: ${COUCHDB_REQUIRE_VALID_USER:=false}
+: ${COUCHDB_ADMIN_USER:=admin}
+: ${COUCHDB_ADMIN_PASS:=secret}
 
 : ${COUCHDB_SHARDS:=4}
 : ${COUCHDB_READ_QUORUM:=1}
@@ -18,32 +24,49 @@ set -e
 : ${COUCHDB_REPLICAS:=3}
 
 
-if [ "$MOUNT_PERSISTENT_VOLUME" = true ]; then
-    VOLUME_MOUNT_PATH="/mnt/couchdb-data/$(hostname)"
-
-    echo -e "Using Persistent Volume ...
-    host: $(hostname)
-    volume-mount-path: $VOLUME_MOUNT_PATH
-    couchdb-data-path: $COUCHDB_DATA_PATH
-    "
-    mkdir -p $VOLUME_MOUNT_PATH
-    ln -sf $VOLUME_MOUNT_PATH $COUCHDB_DATA_PATH
-else
-    mkdir -p $COUCHDB_DATA_PATH
+if [[ $KUBERNETES_HOSTNAME_FIX = true ]]
+then
+    eval $(fix-kube-hostname enable)
 fi
+
+
+if [[ $PERSISTENT_STORAGE_ENABLED = true ]]
+then 
+    persist-volume-util link $app
+fi
+
+
+echo "Writing erlang cookie ..." 
+write-erlang-cookie
 
 
 echo "Writing vm.args file ..."
 tee ~/etc/vm.args <<EOF
--name couchdb@$(hostname -f)
-+K true
-+A $COUCHDB_THREADS
--kernel error_logger silent inet_dist_listen_min 11500 inet_dist_listen_max 11999
+# Turn off the sasl error logger
 -sasl sasl_error_logger false
+
+# Use the following erlang long hostname
+-name couchdb@$(env hostname -f)
+
+# Use kernel poll functionality if supported by emulator
++K true
+
+# Start a pool of asynchronous IO threads
++A $ERLANG_THREADS
+
+# Turn off the kernel error_logger
+-kernel error_logger silent 
+
+# Set erlang distribution to use 11500-11999 ports instead of random
+# predictibility has value here
+-kernel inet_dist_listen_min 11500 inet_dist_listen_max 11999
+
+# Comment this line out if you want the Erlang shell
 +Bd -noinput
 EOF
 
 
+# admins section commented for now, broken implementation
 echo "Rewriting local.ini file ..."
 tee ~/etc/local.ini <<EOF
 [couchdb]
@@ -51,12 +74,12 @@ database_dir = $COUCHDB_DATA_PATH
 view_index_dir = $COUCHDB_DATA_PATH
 
 [chttpd]
-require_valid_user = false
+require_valid_user = $COUCHDB_REQUIRE_VALID_USER
 port = 5984
 bind_address = $COUCHDB_BIND_ADDR
 
 [httpd]
-require_valid_user = false
+require_valid_user = $COUCHDB_REQUIRE_VALID_USER
 port = 5986
 bind_address = $COUCHDB_BIND_ADDR
 
@@ -67,42 +90,23 @@ r=$COUCHDB_READ_QUORUM
 w=$COUCHDB_WRITE_QUORUM
 
 [log]
-level = $COUCHDB_LOG_LEVEL
+level = ${COUCHDB_LOG_LEVEL,,}
+
+;[admins]
+;$COUCHDB_ADMIN_USER = $COUCHDB_ADMIN_PASS
 EOF
-
-
-echo "Reading erlang cookie ..."
-if [ -f '/etc/secrets/erlang/cookie' ]; then
-    echo "Cookie secret mounted ..."
-    ERLANG_COOKIE=$(cat /etc/secrets/erlang/cookie)
-else
-    echo "*** No Erlang Cookie Mounted! ***"
-    ERLANG_COOKIE=insecure-cookie
-fi
-echo "$ERLANG_COOKIE" > ~/.erlang.cookie
 
 
 echo "Ensuring correct permissions ..."
-chown -R couchdb:couchdb ~
-chmod -R 0755 ~/data
-chmod 0600 ~/.erlang.cookie 
+chown -R $user:$user ~
 
 
 cd ~
-    echo "Starting couchdb ..."
-    cat >&2 <<-'EOF'
-
-************************************************************
-WARNING: if running as a single node, remember to 
-         initialize the system dbs using:
-         
-curl -X PUT http://localhost:5984/_users
-curl -X PUT http://localhost:5984/_replicator
-curl -X PUT http://127.0.0.1:5984/_global_changes
-
-************************************************************
-
-EOF
-    export ERL_CRASH_DUMP=$(date +%s)_couchdb_crash.dump
+    echo "Starting $app ..."
+    export ERL_CRASH_DUMP=$(date +%s)_${app}_crash.dump
     
-    exec gosu couchdb couchdb 2>&1
+    # this script handles annoying post-init tasks automatically,
+    # and touches ~/.cluster-initialized to signal completion.
+    [ ! -f ~/.cluster-initialized ] && gosu $user /tmp/post-init.sh &
+
+    exec gosu $user couchdb 2>&1

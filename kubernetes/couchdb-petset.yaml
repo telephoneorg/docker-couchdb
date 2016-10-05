@@ -22,67 +22,113 @@ spec:
             "volumeMounts": [
               {
                 "name": "couchdb-data",
-                "mountPath": "/mnt/couchdb-data"
+                "mountPath": "/volumes/couchdb"
               }
             ]
           }
         ]'
     spec:
       containers:
-        - name: couchdb
-          image: callforamerica/couchdb
-          imagePullPolicy: Always
-          volumeMounts:
-            - name: erlang-cookie-secret
-              readOnly: true
-              mountPath: /etc/secrets/erlang
-            - name: couchdb-data
-              mountPath: /mnt/couchdb-data
-          env:
-            - name: MOUNT_PERSISTENT_VOLUME
-              value: 'true'
-            - name: COUCHDB_LOG_LEVEL
-              value: info
-          ports:
-            - name: data
-              protocol: TCP
-              containerPort: 5984
-            - name: admin
-              protocol: TCP
-              containerPort: 5986
-          resources:
-            requests:
-              cpu: 2
-              memory: 2G
-            # limits:
-            #   cpu: 2
-            #   memory: 4G
-          readinessProbe:
-            httpGet:
-              path: /_up
-              port: 5984
-            initialDelaySeconds: 10
-            timeoutSeconds: 10
-          livenessProbe:
-            httpGet:
-              path: /_up
-              port: 5984
-            initialDelaySeconds: 30
-            timeoutSeconds: 15
-          imagePullPolicy: Always
-      volumes:
-        - name: erlang-cookie-secret
-          secret:
-            secretName: erlang-cookie
-      restartPolicy: Always
-  volumeClaimTemplates:
-    - metadata:
-        name: couchdb-data
-        annotations:
-          volume.alpha.kubernetes.io/storage-class: anything
-      spec:
-        accessModes:
-          - ReadWriteOnce
+      - name: couchdb
+        image: callforamerica/couchdb
+        imagePullPolicy: Always
+        env:
+        - name: PERSISTENT_STORAGE_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: couchdb-config
+              key: persistent-storage-enabled
+        - name: ERLANG_THREADS
+          valueFrom:
+            configMapKeyRef:
+              name: couchdb-config
+              key: erlang.threads
+        - name: COUCHDB_LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: couchdb-config
+              key: couchdb.log-level
+        - name: COUCHDB_LOG_COLOR
+          valueFrom:
+            configMapKeyRef:
+              name: couchdb-config
+              key: couchdb.log-color
+        - name: COUCHDB_REQUIRE_VALID_USER
+          valueFrom:
+            configMapKeyRef:
+              name: couchdb-config
+              key: couchdb.require-valid-user
+        - name: COUCHDB_SHARDS
+          valueFrom:
+            configMapKeyRef:
+              name: couchdb-config
+              key: couchdb.shards
+        - name: COUCHDB_REPLICAS
+          valueFrom:
+            configMapKeyRef:
+              name: couchdb-config
+              key: couchdb.replicas
+        - name: COUCHDB_READ_QUORUM
+          valueFrom:
+            configMapKeyRef:
+              name: couchdb-config
+              key: couchdb.read-quorum
+        - name: COUCHDB_WRITE_QUORUM
+          valueFrom:
+            configMapKeyRef:
+              name: couchdb-config
+              key: couchdb.write-quorum
+        - name: COUCHDB_ADMIN_USER
+          valueFrom:
+            secretKeyRef:
+              name: couchdb-creds
+              key: couchdb.user
+        - name: COUCHDB_ADMIN_PASS
+          valueFrom:
+            secretKeyRef:
+              name: couchdb-creds
+              key: couchdb.pass
+        - name: ERLANG_COOKIE
+          valueFrom:
+            secretKeyRef:
+              name: erlang-cookie
+              key: erlang.cookie
+        ports:
+        - name: data
+          protocol: TCP
+          containerPort: 5984
+        - name: admin
+          protocol: TCP
+          containerPort: 5986
         resources:
           requests:
-            storage: 100Gi
+            cpu: 2
+            memory: 2G
+          # limits:
+          #   cpu: 2
+          #   memory: 4G
+        readinessProbe:
+          httpGet:
+            path: /_up
+            port: 5984
+          initialDelaySeconds: 10
+          timeoutSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /_up
+            port: 5984
+          initialDelaySeconds: 30
+          timeoutSeconds: 15
+        imagePullPolicy: Always
+      restartPolicy: Always
+  volumeClaimTemplates:
+  - metadata:
+      name: couchdb-data
+      annotations:
+        volume.alpha.kubernetes.io/storage-class: anything
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Gi

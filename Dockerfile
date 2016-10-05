@@ -1,10 +1,6 @@
-FROM debian:jessie
+FROM callforamerica/debian
 
 MAINTAINER joe <joe@valuphone.com>
-
-LABEL   os="linux" \
-        os.distro="debian" \
-        os.version="jessie"
 
 LABEL   lang.name="erlang" \
         lang.version="17.3"
@@ -13,20 +9,19 @@ LABEL   app.name="couchdb" \
         app.version="2.0.0"
 
 ENV     ERLANG_VERSION=17.3 \
-        COUCHDB_VERSION=2.0.0 \
-        GOSU_VERSION=1.9
+        COUCHDB_VERSION=2.0.0
 
 ENV     HOME=/opt/couchdb
-ENV     PATH=$HOME/bin:$PATH
 
-COPY    setup.sh /tmp/setup.sh
-RUN     /tmp/setup.sh
+COPY    build.sh /tmp/build.sh
+RUN     /tmp/build.sh
 
-COPY    entrypoint /usr/bin/entrypoint
+COPY    entrypoint /entrypoint
+COPY    post-init.sh /tmp/post-init.sh
 
 ENV     COUCHDB_LOG_LEVEL=info
 
-VOLUME  ["/opt/couchdb/data"]
+VOLUME  ["/volumes/couchdb"]
 
 EXPOSE  4369 5984 5986 11500-11999
 
@@ -34,4 +29,5 @@ EXPOSE  4369 5984 5986 11500-11999
 
 WORKDIR /opt/couchdb
 
-CMD     ["/usr/bin/entrypoint"]
+ENTRYPOINT  ["/dumb-init", "--"]
+CMD         ["/entrypoint"]

@@ -10,7 +10,7 @@ spec:
   capacity:
     storage: 100Gi
   accessModes:
-    - ReadWriteOnce
+  - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
   glusterfs:
     endpoints: glusterfs-cluster
@@ -30,7 +30,7 @@ spec:
   capacity:
     storage: 100Gi
   accessModes:
-    - ReadWriteOnce
+  - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
   glusterfs:
     endpoints: glusterfs-cluster
@@ -50,7 +50,7 @@ spec:
   capacity:
     storage: 100Gi
   accessModes:
-    - ReadWriteOnce
+  - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
   glusterfs:
     endpoints: glusterfs-cluster
