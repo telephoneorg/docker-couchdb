@@ -67,6 +67,8 @@ tag:
 
 rebuild:
 	@docker build -t $(LOCAL_TAG) --force-rm --no-cache .
+	@$(MAKE) tag
+	@$(MAKE) dclean
 
 commit:
 	@git add -A .
@@ -87,8 +89,17 @@ launch:
 launch-net:
 	@docker run -d --name $(NAME) -h $(NAME).local -p "5984:5984" -p "5986:5986" --network=local --net-alias $(NAME).local $(LOCAL_TAG)
 
+launch-as-dep:
+	@$(MAKE) launch-net
+
+stop-as-dep:
+	@$(MAKE) stop
+
+rm-as-dep:
+	@$(MAKE) rm
+
 launch-volume:
-	@docker run -d --name $(NAME) -h $(NAME).local -e "MOUNT_PERSISTENT_VOLUME=true" --tmpfs /volumes/couchdb:size=512M $(LOCAL_TAG)
+	@docker run -d --name $(NAME) -h $(NAME).local -e "MOUNT_PERSISTENT_VOLUME=true" --tmpfs /volumes/couchdb:size=512MB $(LOCAL_TAG)
 
 proxies-up:
 	@cd ../docker-aptcacher-ng && make remote-persist

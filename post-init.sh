@@ -7,7 +7,7 @@ set -e
 
 host=http://localhost:5984
 shost=http://$COUCHDB_ADMIN_USER:$COUCHDB_ADMIN_PASS@localhost:5984
-# silent_opts="--output /dev/null --silent"
+
 
 function host_up
 {

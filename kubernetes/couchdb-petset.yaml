@@ -13,20 +13,41 @@ spec:
         environment: production
       annotations:
         pod.alpha.kubernetes.io/initialized: "true"
-        pod.alpha.kubernetes.io/init-containers: '[
-          {
-            "name": "register-service",
-            "image": "callforamerica/init-register-service",
-            "imagePullPolicy": "Always",
-            "args": ["couchdb"],
-            "volumeMounts": [
-              {
-                "name": "couchdb-data",
-                "mountPath": "/volumes/couchdb"
-              }
-            ]
-          }
-        ]'
+        pod.alpha.kubernetes.io/init-containers: |
+          [
+            {
+              "name": "register-service",
+              "image": "callforamerica/init-register-service",
+              "imagePullPolicy": "Always",
+              "args": ["couchdb"],
+              "volumeMounts": [
+                {
+                  "name": "couchdb-data",
+                  "mountPath": "/volumes/couchdb"
+                }
+              ],
+              "env": [
+                {
+                  "name": "COUCHDB_ADMIN_USER",
+                  "valueFrom": {
+                    "secretKeyRef": {
+                      "name": "couchdb-creds",
+                      "key": "couchdb.user"
+                    }
+                  }
+                },
+                {
+                  "name": "COUCHDB_ADMIN_PASS",
+                  "valueFrom": {
+                    "secretKeyRef": {
+                      "name": "couchdb-creds",
+                      "key": "couchdb.pass"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
     spec:
       containers:
       - name: couchdb
@@ -93,6 +114,9 @@ spec:
             secretKeyRef:
               name: erlang-cookie
               key: erlang.cookie
+        volumeMounts:
+        - name: couchdb-data
+          mountPath: /volumes/couchdb
         ports:
         - name: data
           protocol: TCP
@@ -104,9 +128,9 @@ spec:
           requests:
             cpu: 2
             memory: 2G
-          # limits:
-          #   cpu: 2
-          #   memory: 4G
+          limits:
+            cpu: 4
+            memory: 4G
         readinessProbe:
           httpGet:
             path: /_up

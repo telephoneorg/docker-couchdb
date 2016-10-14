@@ -11,7 +11,7 @@ eval $(detect-proxy enable)
 
 
 echo "Creating user and group for $user ..."
-useradd --home-dir ~ --create-home --shell=/bin/bash --user-group $user
+useradd --system --home-dir ~ --create-home --shell=/bin/false --user-group $user
 
 
 echo "Installing erlang and $app repos ..."
@@ -63,7 +63,6 @@ apt-get purge -y --auto-remove \
     erlang \
     libcurl4-openssl-dev \
     libicu-dev \
-    libmozjs185-dev \
     pkg-config
 
 apt-get install -y libicu52

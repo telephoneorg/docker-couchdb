@@ -5,6 +5,11 @@ set -e
 app=couchdb
 user=$app
 
+if [ -f /etc/default/$app ]
+then
+    . /etc/default/$app
+fi
+
 : ${ERLANG_THREADS:=25}
 
 # options: debug info warning error none
@@ -24,6 +29,13 @@ user=$app
 : ${COUCHDB_REPLICAS:=3}
 
 
+function log 
+{
+    local msg="$1"
+    echo -e "\E[36m[*]\E[0m ${msg}" 
+}
+
+
 if [[ $KUBERNETES_HOSTNAME_FIX = true ]]
 then
     eval $(fix-kube-hostname enable)
@@ -36,11 +48,11 @@ then
 fi
 
 
-echo "Writing erlang cookie ..." 
+log "Writing erlang cookie ..." 
 write-erlang-cookie
 
 
-echo "Writing vm.args file ..."
+log "Writing vm.args file ..."
 tee ~/etc/vm.args <<EOF
 # Turn off the sasl error logger
 -sasl sasl_error_logger false
@@ -67,7 +79,7 @@ EOF
 
 
 # admins section commented for now, broken implementation
-echo "Rewriting local.ini file ..."
+log "Rewriting local.ini file ..."
 tee ~/etc/local.ini <<EOF
 [couchdb]
 database_dir = $COUCHDB_DATA_PATH
@@ -97,12 +109,12 @@ level = ${COUCHDB_LOG_LEVEL,,}
 EOF
 
 
-echo "Ensuring correct permissions ..."
+log "Ensuring correct permissions ..."
 chown -R $user:$user ~
 
 
 cd ~
-    echo "Starting $app ..."
+    log "Starting $app ..."
     export ERL_CRASH_DUMP=$(date +%s)_${app}_crash.dump
     
     # this script handles annoying post-init tasks automatically,

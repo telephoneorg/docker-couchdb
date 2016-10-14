@@ -2,14 +2,14 @@ FROM callforamerica/debian
 
 MAINTAINER joe <joe@valuphone.com>
 
-LABEL   lang.name="erlang" \
-        lang.version="19.1"
+ARG     ERLANG_VERSION
+ARG     COUCHDB_VERSION
 
-LABEL   app.name="couchdb" \
-        app.version="2.0.0"
+ENV     ERLANG_VERSION=${ERLANG_VERSION:-19.1} \
+        COUCHDB_VERSION=${COUCHDB_VERSION:-2.0.0}
 
-ENV     ERLANG_VERSION=19.1 \
-        COUCHDB_VERSION=2.0.0
+LABEL   lang.erlang.version=$ERLANG_VERSION
+LABEL   app.rabbitmq.version=$RABBITMQ_VERSION
 
 ENV     HOME=/opt/couchdb
 
@@ -31,3 +31,4 @@ WORKDIR /opt/couchdb
 
 ENTRYPOINT  ["/dumb-init", "--"]
 CMD         ["/entrypoint"]
+
