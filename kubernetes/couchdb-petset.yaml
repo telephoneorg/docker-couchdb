@@ -12,8 +12,8 @@ spec:
         project: valuphone
         environment: production
       annotations:
-        pod.alpha.kubernetes.io/initialized: "true"
-        pod.alpha.kubernetes.io/init-containers: |
+        pod.alpha.kubernetes.io/initialized: 'true'
+        pod.alpha.kubernetes.io/init-containers: |-
           [
             {
               "name": "register-service",
@@ -126,11 +126,11 @@ spec:
           containerPort: 5986
         resources:
           requests:
-            cpu: 2
-            memory: 2G
+            cpu: 3
+            memory: 2Gi
           limits:
-            cpu: 4
-            memory: 4G
+            cpu: 3
+            memory: 2Gi
         readinessProbe:
           httpGet:
             path: /_up

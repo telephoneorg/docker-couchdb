@@ -16,3 +16,4 @@ data:
   couchdb.replicas: 3
   couchdb.read-quorum: 1
   couchdb.write-quorum: 2
+  couchdb.host: couchdb-bal

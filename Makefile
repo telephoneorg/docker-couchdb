@@ -13,6 +13,9 @@ GITHUB_REPO = docker-couchdb
 DOCKER_REPO = couchdb
 BUILD_BRANCH = master
 
+VOLUME_ARGS = --tmpfs /volumes/couchdb:size=512M
+PORT_ARGS = -p "5984:5984" -p "5986:5986"
+SHELL = bash -l
 
 .PHONY: all build test release shell run start stop rm rmi default
 
@@ -50,9 +53,9 @@ clean-pvc:
 # 	kubectl get po --watch
 
 test-multi-up:
-	@docker run -d -h $(NAME)-a.local --name $(NAME)-a --network=local --net-alias $(NAME)-a.local -p "5984:5984" -p "5986:5986" $(LOCAL_TAG)
-	@docker run -d -h $(NAME)-b.local --name $(NAME)-b --network=local --net-alias $(NAME)-b.local $(LOCAL_TAG)
-	@docker run -d -h $(NAME)-c.local --name $(NAME)-c --network=local --net-alias $(NAME)-c.local $(LOCAL_TAG)
+	@docker run -d -h $(NAME)-a.local --name $(NAME)-a --network=local --net-alias $(NAME)-a.local $(VOLUME_ARGS) $(PORT_ARGS) $(LOCAL_TAG)
+	@docker run -d -h $(NAME)-b.local --name $(NAME)-b --network=local --net-alias $(NAME)-b.local $(VOLUME_ARGS) $(LOCAL_TAG)
+	@docker run -d -h $(NAME)-c.local --name $(NAME)-c --network=local --net-alias $(NAME)-c.local $(VOLUME_ARGS) $(LOCAL_TAG)
 
 test-multi-down:
 	@docker rm -f $(NAME)-a $(NAME)-b $(NAME)-c
@@ -78,16 +81,16 @@ push:
 	@git push origin master
 
 shell:
-	@docker exec -ti $(NAME) /bin/bash
+	@docker exec -ti $(NAME) $(SHELL)
 
 run:
-	@docker run -it --rm --name $(NAME) -h $(NAME).local $(LOCAL_TAG) bash
+	@docker run -it --rm --name $(NAME) -h $(NAME).local $(LOCAL_TAG) $(SHELL)
 
 launch:
-	@docker run -d --name $(NAME) -h $(NAME).local -p "5984:5984" -p "5986:5986" $(LOCAL_TAG)
+	@docker run -d --name $(NAME) -h $(NAME).local $(VOLUME_ARGS) $(PORT_ARGS) $(LOCAL_TAG)
 
 launch-net:
-	@docker run -d --name $(NAME) -h $(NAME).local -p "5984:5984" -p "5986:5986" --network=local --net-alias $(NAME).local $(LOCAL_TAG)
+	@docker run -d --name $(NAME) -h $(NAME).local $(VOLUME_ARGS) $(PORT_ARGS) --network=local --net-alias $(NAME).local $(LOCAL_TAG)
 
 launch-as-dep:
 	@$(MAKE) launch-net
@@ -99,11 +102,11 @@ rm-as-dep:
 	@$(MAKE) rm
 
 launch-volume:
-	@docker run -d --name $(NAME) -h $(NAME).local -e "MOUNT_PERSISTENT_VOLUME=true" --tmpfs /volumes/couchdb:size=512MB $(LOCAL_TAG)
+	@docker run -d --name $(NAME) -h $(NAME).local -e "MOUNT_PERSISTENT_VOLUME=true" $(VOLUME_ARGS) $(PORT_ARGS) $(LOCAL_TAG)
 
 proxies-up:
 	@cd ../docker-aptcacher-ng && make remote-persist
-	@cd ../docker-squid && make remote-persist
+	# @cd ../docker-squid && make remote-persist
 
 create-network:
 	@docker network create -d bridge local
@@ -133,10 +136,10 @@ rmi:
 	@docker rmi $(LOCAL_TAG)
 	@docker rmi $(REMOTE_TAG)
 
-dclean:
-	@-docker ps -aq | gxargs -I{} docker rm {} 2> /dev/null || true
-	@-docker images -f dangling=true -q | xargs docker rmi
-	@-docker volume ls -f dangling=true -q | xargs docker volume rm
+# dclean:
+# 	@-docker ps -aq | gxargs -I{} docker rm {} 2> /dev/null || true
+# 	@-docker images -f dangling=true -q | xargs docker rmi
+# 	@-docker volume ls -f dangling=true -q | xargs docker volume rm
 
 kube-deploy-pvs:
 	@kubectl create -f kubernetes/$(NAME)-pvs.yaml
