@@ -17,6 +17,8 @@ VOLUME_ARGS = --tmpfs /volumes/couchdb:size=512M
 PORT_ARGS = -p "5984:5984" -p "5986:5986"
 SHELL = bash -l
 
+-include ../Makefile.inc
+
 .PHONY: all build test release shell run start stop rm rmi default
 
 all: build
@@ -33,24 +35,24 @@ clean-pvc:
 	@-kubectl delete pv -l app=$(NAME)
 	@-kubectl delete pvc -l app=$(NAME)
 
-# patch-two:
-# 	kubectl patch petset $(NAME) -p '{"spec": {"replicas": 2}}' 
-# 	kubectl get po --watch
+patch-two:
+	kubectl patch petset $(NAME) -p '{"spec": {"replicas": 2}}' 
+	kubectl get po --watch
 
-# patch-three:
-# 	kubectl patch petset $(NAME) -p '{"spec": {"replicas": 3}}' 
+patch-three:
+	kubectl patch petset $(NAME) -p '{"spec": {"replicas": 3}}' 
 
-# test-down:
-# 	-kubectl delete petset $(NAME)
-# 	-kubectl delete po -l app=$(NAME)
-# 	$(MAKE) clean-pvc
+test-down:
+	-kubectl delete petset $(NAME)
+	-kubectl delete po -l app=$(NAME)
+	$(MAKE) clean-pvc
 
-# test-up:
-# 	$(MAKE) load-pvs
-# 	$(MAKE) load-pvcs
-# 	sleep 10
-# 	kubectl create -f kubernetes/$(NAME)-petset.yaml
-# 	kubectl get po --watch
+test-up:
+	$(MAKE) load-pvs
+	$(MAKE) load-pvcs
+	sleep 10
+	kubectl create -f kubernetes/$(NAME)-petset.yaml
+	kubectl get po --watch
 
 test-multi-up:
 	@docker run -d -h $(NAME)-a.local --name $(NAME)-a --network=local --net-alias $(NAME)-a.local $(VOLUME_ARGS) $(PORT_ARGS) $(LOCAL_TAG)

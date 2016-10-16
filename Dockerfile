@@ -17,7 +17,6 @@ COPY    build.sh /tmp/build.sh
 RUN     /tmp/build.sh
 
 COPY    entrypoint /entrypoint
-COPY    post-init.sh /tmp/post-init.sh
 
 ENV     COUCHDB_LOG_LEVEL=info
 

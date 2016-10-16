@@ -28,19 +28,16 @@ fi
 : ${COUCHDB_WRITE_QUORUM:=1}
 : ${COUCHDB_REPLICAS:=3}
 
-
 function log 
 {
     local msg="$1"
     echo -e "\E[36m[*]\E[0m ${msg}" 
 }
 
-
 if [[ $KUBERNETES_HOSTNAME_FIX = true ]]
 then
     eval $(fix-kube-hostname enable)
 fi
-
 
 if [[ $PERSISTENT_STORAGE_ENABLED = true ]]
 then 
@@ -118,7 +115,7 @@ cd ~
     export ERL_CRASH_DUMP=$(date +%s)_${app}_crash.dump
     
     # this script handles annoying post-init tasks automatically,
-    # and touches ~/.cluster-initialized to signal completion.
-    [ ! -f ~/.cluster-initialized ] && gosu $user /tmp/post-init.sh &
+    # and deletes ~/.init-node
+    [[ -f ~/.init-node ]] && ~/init-node.sh > /dev/null 2>&1 &
 
     exec gosu $user couchdb 2>&1

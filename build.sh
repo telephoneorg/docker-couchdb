@@ -68,12 +68,64 @@ apt-get purge -y --auto-remove \
 apt-get install -y libicu52
 
 
+# this script handles annoying post-init tasks automatically,
+echo "Creating node init script"
+tee ~/init-node.sh <<'EOF'
+#!/bin/bash
+
+: ${COUCHDB_ADMIN_USER:=admin}
+: ${COUCHDB_ADMIN_PASS:=secret}
+
+this="$0"
+host=http://localhost:5984
+shost=http://$COUCHDB_ADMIN_USER:$COUCHDB_ADMIN_PASS@localhost:5984
+
+function finish
+{
+    shred -u $this > /dev/null 2>&1
+}
+
+function host_up
+{
+    local host="$1"
+    curl -sS $host --connect-timeout 2 --head --fail > /dev/null 2>&1
+}
+
+function enable_cluster
+{
+    local host="${1:-$host}"
+    curl -sS -X POST $host/_cluster_setup -H "Content-Type: application/json" -d "{\"action\": \"enable_cluster\", \"username\": \"$COUCHDB_ADMIN_USER\", \"password\": \"$COUCHDB_ADMIN_PASS\"}" > /dev/null 2>&1
+}
+
+function finish_cluster
+{
+    local secure=${1:-false}
+    [[ $secure = true ]] && local host=$shost
+    curl -sS -X POST $shost/_cluster_setup -H 'Content-Type: application/json' -d '{"action": "finish_cluster"}' > /dev/null 2>&1
+}
+
+until host_up $host
+do
+    sleep 1
+done
+
+enable_cluster $host
+finish_cluster $shost
+
+rm -f ~/.init-node > /dev/null 2>&1
+trap finish EXIt
+sleep 1
+EOF
+chmod +x $_
+touch ~/.init-node
+
+
 echo "Creating volume directories ..."
-mkdir -p /data/$app
+mkdir -p /volumes/$app /data/$app
 
 
 echo "Setting Ownership & Permissions ..."
-chown -R $user:$user ~ /data/$app
+chown -R $user:$user ~ /volumes/$app /data/$app
 find ~ -type d -exec chmod 0770 {} \;
 
 chmod 0644 ~/etc/*
