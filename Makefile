@@ -94,21 +94,23 @@ launch:
 launch-net:
 	@docker run -d --name $(NAME) -h $(NAME).local $(VOLUME_ARGS) $(PORT_ARGS) --network=local --net-alias $(NAME).local $(LOCAL_TAG)
 
+launch-dev:
+	@$(MAKE) launch-net
+
+rmf-dev:
+	@$(MAKE) rmf
+
 launch-as-dep:
 	@$(MAKE) launch-net
 
-stop-as-dep:
-	@$(MAKE) stop
-
-rm-as-dep:
-	@$(MAKE) rm
+rmf-as-dep:
+	@$(MAKE) rmf
 
 launch-volume:
 	@docker run -d --name $(NAME) -h $(NAME).local -e "MOUNT_PERSISTENT_VOLUME=true" $(VOLUME_ARGS) $(PORT_ARGS) $(LOCAL_TAG)
 
 proxies-up:
 	@cd ../docker-aptcacher-ng && make remote-persist
-	# @cd ../docker-squid && make remote-persist
 
 create-network:
 	@docker network create -d bridge local

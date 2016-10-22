@@ -14,7 +14,6 @@ fi
 
 # options: debug info warning error none
 : ${COUCHDB_LOG_LEVEL:=info}
-: ${COUCHDB_LOG_COLOR:=true}
 
 : ${COUCHDB_DATA_PATH:=/data/$app}
 : ${COUCHDB_BIND_ADDR:=0.0.0.0}

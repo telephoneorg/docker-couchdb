@@ -10,10 +10,8 @@ data:
   persistent-storage-enabled: 'true'
   erlang.threads: 25
   couchdb.log-level: info
-  couchdb.log-color: 'true'
   couchdb.require-valid-user: 'false'
   couchdb.shards: 4
   couchdb.replicas: 3
   couchdb.read-quorum: 1
   couchdb.write-quorum: 2
-  couchdb.host: couchdb-bal

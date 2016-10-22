@@ -69,11 +69,6 @@ spec:
             configMapKeyRef:
               name: couchdb-config
               key: couchdb.log-level
-        - name: COUCHDB_LOG_COLOR
-          valueFrom:
-            configMapKeyRef:
-              name: couchdb-config
-              key: couchdb.log-color
         - name: COUCHDB_REQUIRE_VALID_USER
           valueFrom:
             configMapKeyRef:
@@ -126,7 +121,7 @@ spec:
           containerPort: 5986
         resources:
           requests:
-            cpu: 3
+            cpu: 2
             memory: 2Gi
           limits:
             cpu: 3

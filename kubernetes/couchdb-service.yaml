@@ -3,8 +3,8 @@ kind: Service
 metadata: 
   name: couchdb
   annotations:
-    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
-spec:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: 'true'
+    spec:
   clusterIP: None
   selector:
     app: couchdb
