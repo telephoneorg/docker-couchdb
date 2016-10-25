@@ -40,7 +40,7 @@ fi
 
 if [[ $PERSISTENT_STORAGE_ENABLED = true ]]
 then 
-    persist-volume-util link $app
+    persistent-volume-util link $app
 fi
 
 
