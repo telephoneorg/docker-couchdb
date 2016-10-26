@@ -109,6 +109,8 @@ spec:
             secretKeyRef:
               name: erlang-cookie
               key: erlang.cookie
+        # - name: REGISTER_NODE
+        #   value: 'true'
         volumeMounts:
         - name: couchdb-data
           mountPath: /volumes/couchdb

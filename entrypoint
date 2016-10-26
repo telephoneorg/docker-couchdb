@@ -115,6 +115,6 @@ cd ~
     
     # this script handles annoying post-init tasks automatically,
     # and deletes ~/.init-node
-    [[ -f ~/.init-node ]] && ~/init-node.sh > /dev/null 2>&1 &
-
+    # [[ -f ~/.init-node ]] && ~/init-node.sh > /dev/null 2>&1 &
+    # [[ -f ~/.register-node ]] && ~/register-node.sh > /dev/null 2>&1 &
     exec gosu $user couchdb 2>&1
