@@ -84,14 +84,14 @@ function node_is_invalid
 function node_not_in_nodes_db
 {
     local this_node=${1:-$(hostname -f)}
-    local master_node=${1:-$(get_first_node_for_service)}
+    local master_node=${2:-$(get_first_node_for_service)}
     local master_host=http://$COUCHDB_ADMIN_USER:$COUCHDB_ADMIN_PASS@$master_node
-    curl -sS $master_host:5986/_nodes/couchdb@$this_node | grep -q _id
+    curl -sS $master_host:5986/_nodes/couchdb@$this_node | grep -q error
     if [ $? = 0 ]
     then
-        return 1
-    else
         return 0
+    else
+        return 1
     fi
 }
 
