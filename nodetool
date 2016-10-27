@@ -132,7 +132,8 @@ function add_node
     [[ -z $node_to_add ]] && return 1
     local master_node="${2:-$local_node}"
     local master_host=http://$COUCHDB_ADMIN_USER:$COUCHDB_ADMIN_PASS@$master_node
-    curl -sS -X POST $master_host:5984/_cluster_setup -H 'Content-Type: application/json' -d "{\"action\":\"add_node\", \"host\":\"$node_to_add\", \"username\":\"$COUCHDB_ADMIN_USER\", \"password\":\"$COUCHDB_ADMIN_PASS\"}"
+    result=$(curl -sS -X POST $master_host:5984/_cluster_setup -H 'Content-Type: application/json' -d "{\"action\":\"add_node\", \"host\":\"$node_to_add\", \"username\":\"$COUCHDB_ADMIN_USER\", \"password\":\"$COUCHDB_ADMIN_PASS\"}")
+    log "$FUNCNAME-result: $result"
 }
 
 function maybe_add_node
@@ -149,7 +150,8 @@ function maybe_add_node
     if node_not_in_nodes_db $node_to_add $master_node
     then
         log "not in database, adding: $this_node > $master_host"
-        curl -sS -X POST $master_host:5984/_cluster_setup -H 'Content-Type: application/json' -d "{\"action\":\"add_node\", \"host\":\"$node_to_add\", \"username\":\"$COUCHDB_ADMIN_USER\", \"password\":\"$COUCHDB_ADMIN_PASS\"}"
+        result=$(curl -sS -X POST $master_host:5984/_cluster_setup -H 'Content-Type: application/json' -d "{\"action\":\"add_node\", \"host\":\"$node_to_add\", \"username\":\"$COUCHDB_ADMIN_USER\", \"password\":\"$COUCHDB_ADMIN_PASS\"}")
+        log "$FUNCNAME-result: $result"
     else
         log "host already in database, skipping"
     fi
@@ -161,13 +163,13 @@ function add_this_node_to_master
     local master_host=$(get_first_node_for_service)
     log "this_host: $this_host  > master_host: $master_host"
     maybe_add_node $this_host $master_host
-    return $?
 }
 
 function finish_cluster
 {
     local shost="${1:-$local_shost}"
-    curl -sS -X POST $shost:5984/_cluster_setup -H 'Content-Type: application/json' -d '{"action": "finish_cluster"}'
+    result=$(curl -sS -X POST $shost:5984/_cluster_setup -H 'Content-Type: application/json' -d '{"action": "finish_cluster"}')
+    log "$FUNCNAME-result: $result"
 }
 
 function autocluster_kubernetes
@@ -175,10 +177,10 @@ function autocluster_kubernetes
     wait_on $local_host
     if is_not_first_node
     then
-        echo "Not first node .."
+        log "We're not the first node"
         add_this_node_to_master
     else
-        echo "First node ..."
+        log "We're First node ..."
     fi
     finish_cluster
     clean_exit
