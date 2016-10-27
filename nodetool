@@ -95,13 +95,15 @@ function node_not_in_nodes_db
     fi
 }
 
+# if is node 2+
 function is_not_first_node {
     num_nodes=$(get_num_nodes_for_service)
-    if (( $num_nodes > 0 ))
+    log "num_nodes: $num_nodes"
+    if (( $num_nodes >= 1 ))
     then
-        return 1
-    else
         return 0
+    else
+        return 1
     fi
 }
 
