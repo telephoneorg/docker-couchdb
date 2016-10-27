@@ -13,6 +13,7 @@ GITHUB_REPO = docker-couchdb
 DOCKER_REPO = couchdb
 BUILD_BRANCH = master
 
+ENV_ARGS = --env-file default.env
 VOLUME_ARGS = --tmpfs /volumes/couchdb:size=512M
 PORT_ARGS = -p "5984:5984" -p "5986:5986"
 SHELL = bash -l
@@ -55,9 +56,10 @@ test-up:
 	kubectl get po --watch
 
 test-multi-up:
-	@docker run -d -h $(NAME)-a.local --name $(NAME)-a --network=local --net-alias $(NAME)-a.local $(VOLUME_ARGS) $(PORT_ARGS) $(LOCAL_TAG)
-	@docker run -d -h $(NAME)-b.local --name $(NAME)-b --network=local --net-alias $(NAME)-b.local $(VOLUME_ARGS) $(LOCAL_TAG)
-	@docker run -d -h $(NAME)-c.local --name $(NAME)-c --network=local --net-alias $(NAME)-c.local $(VOLUME_ARGS) $(LOCAL_TAG)
+	$(ENV_ARGS)
+	@docker run -d --name $(NAME)-a -h $(NAME)-a.local $(ENV_ARGS) $(VOLUME_ARGS) $(PORT_ARGS) --network=local --net-alias $(NAME)-a.local $(LOCAL_TAG)
+	@docker run -d --name $(NAME)-b -h $(NAME)-b.local $(ENV_ARGS) $(VOLUME_ARGS) --network=local --net-alias $(NAME)-b.local $(LOCAL_TAG)
+	@docker run -d --name $(NAME)-c -h $(NAME)-c.local $(ENV_ARGS) $(VOLUME_ARGS) --network=local --net-alias $(NAME)-c.local $(LOCAL_TAG)
 
 test-multi-down:
 	@docker rm -f $(NAME)-a $(NAME)-b $(NAME)-c
@@ -86,13 +88,13 @@ shell:
 	@docker exec -ti $(NAME) $(SHELL)
 
 run:
-	@docker run -it --rm --name $(NAME) -h $(NAME).local $(LOCAL_TAG) $(SHELL)
+	@docker run -it --rm --name $(NAME) -h $(NAME).local $(ENV_ARGS) $(LOCAL_TAG) $(SHELL)
 
 launch:
-	@docker run -d --name $(NAME) -h $(NAME).local $(VOLUME_ARGS) $(PORT_ARGS) $(LOCAL_TAG)
+	@docker run -d --name $(NAME) -h $(NAME).local $(ENV_ARGS) $(VOLUME_ARGS) $(PORT_ARGS) $(LOCAL_TAG)
 
 launch-net:
-	@docker run -d --name $(NAME) -h $(NAME).local $(VOLUME_ARGS) $(PORT_ARGS) --network=local --net-alias $(NAME).local $(LOCAL_TAG)
+	@docker run -d --name $(NAME) -h $(NAME).local $(ENV_ARGS) $(VOLUME_ARGS) $(PORT_ARGS) --network=local --net-alias $(NAME).local $(LOCAL_TAG)
 
 launch-dev:
 	@$(MAKE) launch-net
@@ -107,7 +109,7 @@ rmf-as-dep:
 	@$(MAKE) rmf
 
 launch-volume:
-	@docker run -d --name $(NAME) -h $(NAME).local -e "MOUNT_PERSISTENT_VOLUME=true" $(VOLUME_ARGS) $(PORT_ARGS) $(LOCAL_TAG)
+	@docker run -d --name $(NAME) -h $(NAME).local $(ENV_ARGS) -e "MOUNT_PERSISTENT_VOLUME=true" $(VOLUME_ARGS) $(PORT_ARGS) $(LOCAL_TAG)
 
 proxies-up:
 	@cd ../docker-aptcacher-ng && make remote-persist

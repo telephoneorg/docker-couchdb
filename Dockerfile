@@ -22,6 +22,8 @@ RUN     /tmp/build.sh
 COPY    entrypoint /tmp/
 RUN     mv /tmp/entrypoint /
 
+COPY    nodetool /usr/local/bin/
+
 ENV     COUCHDB_LOG_LEVEL=info
 
 VOLUME  ["/volumes/couchdb"]

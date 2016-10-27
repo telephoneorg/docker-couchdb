@@ -13,41 +13,41 @@ spec:
         environment: production
       annotations:
         pod.alpha.kubernetes.io/initialized: 'true'
-        pod.alpha.kubernetes.io/init-containers: |-
-          [
-            {
-              "name": "register-service",
-              "image": "callforamerica/init-register-service",
-              "imagePullPolicy": "Always",
-              "args": ["couchdb"],
-              "volumeMounts": [
-                {
-                  "name": "couchdb-data",
-                  "mountPath": "/volumes/couchdb"
-                }
-              ],
-              "env": [
-                {
-                  "name": "COUCHDB_ADMIN_USER",
-                  "valueFrom": {
-                    "secretKeyRef": {
-                      "name": "couchdb-creds",
-                      "key": "couchdb.user"
-                    }
-                  }
-                },
-                {
-                  "name": "COUCHDB_ADMIN_PASS",
-                  "valueFrom": {
-                    "secretKeyRef": {
-                      "name": "couchdb-creds",
-                      "key": "couchdb.pass"
-                    }
-                  }
-                }
-              ]
-            }
-          ]
+        # pod.alpha.kubernetes.io/init-containers: |-
+        #   [
+        #     {
+        #       "name": "register-service",
+        #       "image": "callforamerica/init-register-service",
+        #       "imagePullPolicy": "Always",
+        #       "args": ["couchdb"],
+        #       "volumeMounts": [
+        #         {
+        #           "name": "couchdb-data",
+        #           "mountPath": "/volumes/couchdb"
+        #         }
+        #       ],
+        #       "env": [
+        #         {
+        #           "name": "COUCHDB_ADMIN_USER",
+        #           "valueFrom": {
+        #             "secretKeyRef": {
+        #               "name": "couchdb-creds",
+        #               "key": "couchdb.user"
+        #             }
+        #           }
+        #         },
+        #         {
+        #           "name": "COUCHDB_ADMIN_PASS",
+        #           "valueFrom": {
+        #             "secretKeyRef": {
+        #               "name": "couchdb-creds",
+        #               "key": "couchdb.pass"
+        #             }
+        #           }
+        #         }
+        #       ]
+        #     }
+        #   ]
     spec:
       containers:
       - name: couchdb
@@ -109,8 +109,8 @@ spec:
             secretKeyRef:
               name: erlang-cookie
               key: erlang.cookie
-        # - name: REGISTER_NODE
-        #   value: 'true'
+        - name: COUCHDB_AUTOCLUSTER_MODE
+          value: kubernetes
         volumeMounts:
         - name: couchdb-data
           mountPath: /volumes/couchdb

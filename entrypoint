@@ -100,8 +100,9 @@ w=$COUCHDB_WRITE_QUORUM
 [log]
 level = ${COUCHDB_LOG_LEVEL,,}
 
-;[admins]
-;$COUCHDB_ADMIN_USER = $COUCHDB_ADMIN_PASS
+[admins]
+$COUCHDB_ADMIN_USER = $COUCHDB_ADMIN_PASS
+
 EOF
 
 
@@ -115,6 +116,5 @@ cd ~
     
     # this script handles annoying post-init tasks automatically,
     # and deletes ~/.init-node
-    # [[ -f ~/.init-node ]] && ~/init-node.sh > /dev/null 2>&1 &
-    # [[ -f ~/.register-node ]] && ~/register-node.sh > /dev/null 2>&1 &
+    [[ -f ~/.init-node ]] && nodetool auto_init &
     exec gosu $user couchdb 2>&1
