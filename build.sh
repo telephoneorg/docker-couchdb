@@ -21,7 +21,7 @@ echo 'deb http://packages.erlang-solutions.com/debian jessie contrib' > /etc/apt
 
 echo "Installing essentials ..."
 apt-get update
-apt-get install -y curl dnsutils jq
+apt-get install -y curl dnsutils
 
 
 echo "Calculating versions ..."

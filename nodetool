@@ -3,7 +3,7 @@
 : ${COUCHDB_ADMIN_USER:=admin}
 : ${COUCHDB_ADMIN_PASS:=secret}
 
-service=${1:-couchdb}
+service=couchdb
 local_node=localhost
 local_host=http://$local_node
 local_shost=http://$COUCHDB_ADMIN_USER:$COUCHDB_ADMIN_PASS@$local_node
@@ -99,7 +99,7 @@ function node_not_in_nodes_db
 function is_not_first_node {
     num_nodes=$(get_num_nodes_for_service)
     log "num_nodes: $num_nodes"
-    if (( $num_nodes >= 1 ))
+    if (( $num_nodes > 1 ))
     then
         return 0
     else
