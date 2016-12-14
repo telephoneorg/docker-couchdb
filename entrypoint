@@ -2,50 +2,37 @@
 
 set -e
 
-app=couchdb
-user=$app
+APP=couchdb
+USER=$APP
 
-if [ -f /etc/default/$app ]
-then
-    . /etc/default/$app
+if [ -f /etc/default/$APP ]; then
+	. /etc/default/$APP
 fi
 
-: ${ERLANG_THREADS:=25}
+: declare -ir ${ERLANG_THREADS:=25}
 
 # options: debug info warning error none
-: ${COUCHDB_LOG_LEVEL:=info}
+: readonly ${COUCHDB_LOG_LEVEL:=info}
+: readonly ${COUCHDB_DATA_PATH:=/data/$APP}
+: readonly ${COUCHDB_BIND_ADDR:=0.0.0.0}
+: readonly ${COUCHDB_REQUIRE_VALID_USER:=false}
 
-: ${COUCHDB_DATA_PATH:=/data/$app}
-: ${COUCHDB_BIND_ADDR:=0.0.0.0}
+: declare -ir ${COUCHDB_SHARDS:=4}
+: declare -ir ${COUCHDB_READ_QUORUM:=1}
+: declare -ir ${COUCHDB_WRITE_QUORUM:=1}
+: declare -ir ${COUCHDB_REPLICAS:=3}
 
-: ${COUCHDB_REQUIRE_VALID_USER:=false}
-: ${COUCHDB_ADMIN_USER:=admin}
-: ${COUCHDB_ADMIN_PASS:=secret}
-
-: ${COUCHDB_SHARDS:=4}
-: ${COUCHDB_READ_QUORUM:=1}
-: ${COUCHDB_WRITE_QUORUM:=1}
-: ${COUCHDB_REPLICAS:=3}
-
-function log 
-{
-    local msg="$1"
-    echo -e "\E[36m[*]\E[0m ${msg}" 
+function log() {
+	local msg=$1
+	local date=$(date "+%Y-%m-%d %H:%M:%S")
+	echo -e "\E[36m[*]\E[0m [$date]: $msg" 
 }
 
-if [[ $KUBERNETES_HOSTNAME_FIX = true ]]
-then
-    eval $(fix-kube-hostname enable)
-fi
-
-if [[ $PERSISTENT_STORAGE_ENABLED = true ]]
-then 
-    persistent-volume-util link $app
-fi
-
-
-log "Writing erlang cookie ..." 
-write-erlang-cookie
+function errlog() {
+	local msg=$1
+	local date=$(date "+%Y-%m-%d %H:%M:%S")
+	echo -e "\E[31m[x]\E[0m [$date]: $msg" >&2
+}
 
 
 log "Writing vm.args file ..."
@@ -54,7 +41,7 @@ tee ~/etc/vm.args <<EOF
 -sasl sasl_error_logger false
 
 # Use the following erlang long hostname
--name couchdb@$(env hostname -f)
+-name couchdb
 
 # Use kernel poll functionality if supported by emulator
 +K true
@@ -73,8 +60,6 @@ tee ~/etc/vm.args <<EOF
 +Bd -noinput
 EOF
 
-
-# admins section commented for now, broken implementation
 log "Rewriting local.ini file ..."
 tee ~/etc/local.ini <<EOF
 [couchdb]
@@ -99,22 +84,25 @@ w=$COUCHDB_WRITE_QUORUM
 
 [log]
 level = ${COUCHDB_LOG_LEVEL,,}
-
-[admins]
-$COUCHDB_ADMIN_USER = $COUCHDB_ADMIN_PASS
-
 EOF
+
+rm -rf ~/.erlang.cookie
+echo "Cookie is: ${ERLANG_COOKIE:-insecure-cookie}"
+echo "${ERLANG_COOKIE:-insecure-cookie}" > ~/.erlang.cookie
+chown $USER:$USER ~/.erlang.cookie
+chmod 600 $_
+cat $_
 
 
 log "Ensuring correct permissions ..."
-chown -R $user:$user ~
-
+chown -R $USER:$USER \
+	~ \
+	/{volumes,data}/$APP \
+	/volumes/$APP/{data,dumps,templates,config}
 
 cd ~
-    log "Starting $app ..."
-    export ERL_CRASH_DUMP=$(date +%s)_${app}_crash.dump
-    
-    # this script handles annoying post-init tasks automatically,
-    # and deletes ~/.init-node
-    [[ -f ~/.init-node ]] && nodetool auto_init &
-    exec gosu $user couchdb 2>&1
+	log "Starting $APP ..."
+	# for interpreting crash dumps see: 
+	#   http://erlang.org/doc/apps/erts/crash_dump.html
+	export ERL_CRASH_DUMP=/dev/termination-log
+	exec gosu $USER couchdb 2>&1

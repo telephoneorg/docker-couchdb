@@ -2,4 +2,6 @@ Makefile
 README.md
 kubernetes/
 data/
-notes*
+notes-*
+dumps/*
+old/

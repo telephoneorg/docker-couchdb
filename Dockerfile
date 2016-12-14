@@ -16,19 +16,13 @@ ENV     HOME=/opt/couchdb
 COPY    build.sh /tmp/build.sh
 RUN     /tmp/build.sh
 
-# bug with docker hub automated builds when interating with root directory
-# ref: https://forums.docker.com/t/automated-docker-build-fails/22831/27
-# COPY    entrypoint /entrypoint
-COPY    entrypoint /tmp/
-RUN     mv /tmp/entrypoint /
-
-COPY    nodetool /usr/local/bin/
+COPY    entrypoint /entrypoint
 
 ENV     COUCHDB_LOG_LEVEL=info
 
-VOLUME  ["/volumes/couchdb"]
+VOLUME  ["/volumes/couchdb/data"]
 
-EXPOSE  4369 5984 5986 11500-11999
+EXPOSE  4369 5984 5986
 
 # USER    couchdb
 
@@ -36,4 +30,3 @@ WORKDIR /opt/couchdb
 
 ENTRYPOINT  ["/dumb-init", "--"]
 CMD         ["/entrypoint"]
-

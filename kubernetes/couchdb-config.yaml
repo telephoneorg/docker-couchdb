@@ -7,7 +7,6 @@ metadata:
     project: valuphone
     environment: production
 data:
-  persistent-storage-enabled: 'true'
   erlang.threads: '25'
   couchdb.log-level: info
   couchdb.require-valid-user: 'false'
@@ -15,3 +14,4 @@ data:
   couchdb.replicas: '3'
   couchdb.read-quorum: '1'
   couchdb.write-quorum: '2'
+  couchdiscover.log-level: info

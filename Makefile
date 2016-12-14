@@ -1,22 +1,23 @@
 NS = vp
-NAME = couchdb
+NAME = couchdb-app
 APP_VERSION = 2.0.0
-IMAGE_VERSION = 2.0
+IMAGE_VERSION = 2.5
 VERSION = $(APP_VERSION)-$(IMAGE_VERSION)
+TYPE = app
+
 LOCAL_TAG = $(NS)/$(NAME):$(VERSION)
 
 REGISTRY = callforamerica
 ORG = vp
-REMOTE_TAG = $(REGISTRY)/$(NAME):$(VERSION)
+REMOTE_TAG = $(REGISTRY)/$(NAME)
 
 GITHUB_REPO = docker-couchdb
 DOCKER_REPO = couchdb
 BUILD_BRANCH = master
 
-ENV_ARGS = --env-file default.env
-VOLUME_ARGS = --tmpfs /volumes/couchdb:size=512M
+VOLUME_ARGS = --tmpfs /volumes/$(NAME)/data:size=512M
 PORT_ARGS = -p "5984:5984" -p "5986:5986"
-SHELL = bash -l
+DSHELL = bash -l
 
 -include ../Makefile.inc
 
@@ -36,38 +37,38 @@ clean-pvc:
 	@-kubectl delete pv -l app=$(NAME)
 	@-kubectl delete pvc -l app=$(NAME)
 
-patch-two:
-	kubectl patch petset $(NAME) -p '{"spec": {"replicas": 2}}' 
-	kubectl get po --watch
+# patch-two:
+# 	kubectl patch petset $(NAME) -p '{"spec": {"replicas": 2}}' 
+# 	kubectl get po --watch
 
-patch-three:
-	kubectl patch petset $(NAME) -p '{"spec": {"replicas": 3}}' 
+# patch-three:
+# 	kubectl patch petset $(NAME) -p '{"spec": {"replicas": 3}}' 
 
-test-down:
-	-kubectl delete petset $(NAME)
-	-kubectl delete po -l app=$(NAME)
-	$(MAKE) clean-pvc
+# test-down:
+# 	-kubectl delete petset $(NAME)
+# 	-kubectl delete po -l app=$(NAME)
+# 	$(MAKE) clean-pvc
 
-test-up:
-	$(MAKE) load-pvs
-	$(MAKE) load-pvcs
-	sleep 10
-	kubectl create -f kubernetes/$(NAME)-petset.yaml
-	kubectl get po --watch
+# test-up:
+# 	$(MAKE) load-pvs
+# 	$(MAKE) load-pvcs
+# 	sleep 10
+# 	kubectl create -f kubernetes/$(NAME)-petset.yaml
+# 	kubectl get po --watch
 
-test-multi-up:
-	$(ENV_ARGS)
-	@docker run -d --name $(NAME)-a -h $(NAME)-a.local $(ENV_ARGS) $(VOLUME_ARGS) $(PORT_ARGS) --network=local --net-alias $(NAME)-a.local $(LOCAL_TAG)
-	@docker run -d --name $(NAME)-b -h $(NAME)-b.local $(ENV_ARGS) $(VOLUME_ARGS) --network=local --net-alias $(NAME)-b.local $(LOCAL_TAG)
-	@docker run -d --name $(NAME)-c -h $(NAME)-c.local $(ENV_ARGS) $(VOLUME_ARGS) --network=local --net-alias $(NAME)-c.local $(LOCAL_TAG)
+# test-multi-up:
+# 	$(ENV_ARGS)
+# 	@docker run -d --name $(NAME)-a -h $(NAME)-a.local $(ENV_ARGS) $(VOLUME_ARGS) $(PORT_ARGS) --network=local --net-alias $(NAME)-a.local $(LOCAL_TAG)
+# 	@docker run -d --name $(NAME)-b -h $(NAME)-b.local $(ENV_ARGS) $(VOLUME_ARGS) --network=local --net-alias $(NAME)-b.local $(LOCAL_TAG)
+# 	@docker run -d --name $(NAME)-c -h $(NAME)-c.local $(ENV_ARGS) $(VOLUME_ARGS) --network=local --net-alias $(NAME)-c.local $(LOCAL_TAG)
 
-test-multi-down:
-	@docker rm -f $(NAME)-a $(NAME)-b $(NAME)-c
+# test-multi-down:
+# 	@docker rm -f $(NAME)-a $(NAME)-b $(NAME)-c
 
-retest:
-	@$(MAKE) test-down
-	@sleep 10
-	@$(MAKE) test-up
+# retest:
+# 	@$(MAKE) test-down
+# 	@sleep 10
+# 	@$(MAKE) test-up
 
 tag:
 	@docker tag $(LOCAL_TAG) $(REMOTE_TAG)
@@ -85,16 +86,19 @@ push:
 	@git push origin master
 
 shell:
-	@docker exec -ti $(NAME) $(SHELL)
+	@docker exec -ti $(NAME) $(_SHELL)
 
 run:
-	@docker run -it --rm --name $(NAME) -h $(NAME).local $(ENV_ARGS) $(LOCAL_TAG) $(SHELL)
+	@docker run -it --rm --name $(NAME) -h $(NAME).local $(LOCAL_TAG) $(_SHELL)
 
 launch:
-	@docker run -d --name $(NAME) -h $(NAME).local $(ENV_ARGS) $(VOLUME_ARGS) $(PORT_ARGS) $(LOCAL_TAG)
+	@docker run -d --name $(NAME) -h $(NAME).local $(VOLUME_ARGS) $(PORT_ARGS) $(LOCAL_TAG)
 
 launch-net:
-	@docker run -d --name $(NAME) -h $(NAME).local $(ENV_ARGS) $(VOLUME_ARGS) $(PORT_ARGS) --network=local --net-alias $(NAME).local $(LOCAL_TAG)
+	@docker run -d --name $(NAME) -h $(NAME).local $(VOLUME_ARGS) $(PORT_ARGS) --network=local --net-alias $(NAME).local $(LOCAL_TAG)
+
+launch-net-b:
+	@docker run -d --name $(NAME)-b -h $(NAME)-b.local $(VOLUME_ARGS) --network=local --net-alias $(NAME)-b.local $(LOCAL_TAG)
 
 launch-dev:
 	@$(MAKE) launch-net
@@ -107,15 +111,6 @@ launch-as-dep:
 
 rmf-as-dep:
 	@$(MAKE) rmf
-
-launch-volume:
-	@docker run -d --name $(NAME) -h $(NAME).local $(ENV_ARGS) -e "MOUNT_PERSISTENT_VOLUME=true" $(VOLUME_ARGS) $(PORT_ARGS) $(LOCAL_TAG)
-
-proxies-up:
-	@cd ../docker-aptcacher-ng && make remote-persist
-
-create-network:
-	@docker network create -d bridge local
 
 logs:
 	@docker logs $(NAME)
@@ -147,56 +142,56 @@ rmi:
 # 	@-docker images -f dangling=true -q | xargs docker rmi
 # 	@-docker volume ls -f dangling=true -q | xargs docker volume rm
 
-kube-deploy-pvs:
-	@kubectl create -f kubernetes/$(NAME)-pvs.yaml
+# kube-deploy-pvs:
+# 	@kubectl create -f kubernetes/$(NAME)-pvs.yaml
 
-kube-deploy-pvcs:
-	@kubectl create -f kubernetes/$(NAME)-pvcs.yaml
+# kube-deploy-pvcs:
+# 	@kubectl create -f kubernetes/$(NAME)-pvcs.yaml
 
-kube-deploy:
-	@$(MAKE) kube-deploy-petset
+# kube-deploy:
+# 	@$(MAKE) kube-deploy-petset
 	
-kube-deploy-petset:
-	@kubectl create -f kubernetes/$(NAME)-petset.yaml
+# kube-deploy-petset:
+# 	@kubectl create -f kubernetes/$(NAME)-petset.yaml
 
-kube-edit-petset:
-	@kubectl edit petset/$(NAME)
+# kube-edit-petset:
+# 	@kubectl edit petset/$(NAME)
 
-kube-delete-petset:
-	@kubectl delete petset/$(NAME)
+# kube-delete-petset:
+# 	@kubectl delete petset/$(NAME)
 
-kube-deploy-service:
-	@kubectl create -f kubernetes/$(NAME)-service.yaml
-	@kubectl create -f kubernetes/$(NAME)-service-balanced.yaml
+# kube-deploy-service:
+# 	@kubectl create -f kubernetes/$(NAME)-service.yaml
+# 	@kubectl create -f kubernetes/$(NAME)-service-balanced.yaml
 
-kube-delete-service:
-	@kubectl delete svc $(NAME)
-	@kubectl delete svc $(NAME)bal
+# kube-delete-service:
+# 	@kubectl delete svc $(NAME)
+# 	@kubectl delete svc $(NAME)bal
 
-kube-apply-service:
-	@kubectl apply -f kubernetes/$(NAME)-service.yaml
-	@kubectl apply -f kubernetes/$(NAME)-service-balanced.yaml
+# kube-apply-service:
+# 	@kubectl apply -f kubernetes/$(NAME)-service.yaml
+# 	@kubectl apply -f kubernetes/$(NAME)-service-balanced.yaml
 
-kube-load-pvs:
-	@kubectl create -f kubernetes/$(NAME)-pvs.yaml
+# kube-load-pvs:
+# 	@kubectl create -f kubernetes/$(NAME)-pvs.yaml
 
-kube-load-pvcs:
-	@kubectl create -f kubernetes/$(NAME)-pvcs.yaml
+# kube-load-pvcs:
+# 	@kubectl create -f kubernetes/$(NAME)-pvcs.yaml
 
-kube-delete-pvs:
-	@kubectl delete -f kubernetes/$(NAME)-pvs.yaml
+# kube-delete-pvs:
+# 	@kubectl delete -f kubernetes/$(NAME)-pvs.yaml
 
-kube-delete-pvcs:
-	@kubectl delete -f kubernetes/$(NAME)-pvcs.yaml
+# kube-delete-pvcs:
+# 	@kubectl delete -f kubernetes/$(NAME)-pvcs.yaml
 
-kube-logsf:
-	@kubectl logs -f $(shell kubectl get po | grep $(NAME) | cut -d' ' -f1)
+# kube-logsf:
+# 	@kubectl logs -f $(shell kubectl get po | grep $(NAME) | cut -d' ' -f1)
 
-kube-logsft:
-	@kubectl logs -f --tail=25 $(shell kubectl get po | grep $(NAME) | cut -d' ' -f1)
+# kube-logsft:
+# 	@kubectl logs -f --tail=25 $(shell kubectl get po | grep $(NAME) | cut -d' ' -f1)
 
-kube-shell:
-	@kubectl exec -ti $(shell kubectl get po | grep $(NAME) | cut -d' ' -f1) -- bash
+# kube-shell:
+# 	@kubectl exec -ti $(shell kubectl get po | grep $(NAME) | cut -d' ' -f1) -- bash
 
 
 default: build
