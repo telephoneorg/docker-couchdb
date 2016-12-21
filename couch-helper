@@ -1,0 +1,52 @@
+#!/bin/bash -l
+
+# Description:
+
+# This tool is only for use in a local dev environment setting where only a
+# a single node, this one, is needed.
+
+# A minor caveat with CouchDB 2.0 is by that each node is in a disabled state
+# initially and as such the logs will complain about missing database tables
+# until they # are created.
+
+# This tool was created to address this problem for a local development
+# cluster.  For production and clustering you should use the kubernetes
+# sidecar container I've created that handles discovery and autoclustering,
+# more info at: https://www.github.com/sip-li/docker-couchdb.
+
+# How it works:
+
+# The script first tests the environment for the variable: 'LOCAL_DEV_CLUSTER'.
+# If present and evalutes to true, the script is run.  If not, the script is
+# skipped entirely.
+
+# If COUCHDB_ADMIN_USER and COUCHDB_ADMIN_PASS are defined in the environment
+# an admin will first be created using those credentials. The admin is created
+# using the 'enable_cluster' action of the 'cluster_setup' API endpoint.
+
+# If they are missing then this step is skipped and the node will operate in
+# 'admin party mode'.
+
+# If the cluster is not finished (and missing the system databases such as:
+# '_users', '_replicator', '_global_changes', the finish_cluster' action will
+# be called on the 'cluster_setup' API endpoint.
+
+# Note: the functions called from this script are present in:
+#  /etc/profile.d/50-couch-functions.sh which was created at image build time.
+# The 'couch' package is available because the shebang uses the '-l' argument.
+
+function main {
+    if couch::is-local-dev-cluster; then
+        until couch::is-up; do
+            sleep 2
+        done
+        if couch::is-disabled && couch::creds-in-env; then
+            couch::enable-cluster
+        fi
+        if couch::is-not-finished && couch::is-missing-system-dbs; then
+            couch::finish-cluster
+        fi
+    fi
+}
+
+main

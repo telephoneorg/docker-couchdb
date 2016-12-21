@@ -5,7 +5,7 @@ MAINTAINER joe <joe@valuphone.com>
 ARG     ERLANG_VERSION
 ARG     COUCHDB_VERSION
 
-ENV     ERLANG_VERSION=${ERLANG_VERSION:-19.1} \
+ENV     ERLANG_VERSION=${ERLANG_VERSION:-19.2} \
         COUCHDB_VERSION=${COUCHDB_VERSION:-2.0.0}
 
 LABEL   lang.erlang.version=$ERLANG_VERSION
@@ -15,6 +15,9 @@ ENV     HOME=/opt/couchdb
 
 COPY    build.sh /tmp/build.sh
 RUN     /tmp/build.sh
+
+COPY    50-couch-functions.sh /etc/profile.d/
+COPY    couch-helper /usr/local/bin/
 
 COPY    entrypoint /entrypoint
 

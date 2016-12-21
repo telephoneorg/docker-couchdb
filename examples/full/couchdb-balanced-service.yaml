@@ -5,8 +5,6 @@ metadata:
 spec:
   selector:
     app: couchdb
-    project: valuphone
-    environment: production
   ports:
   - name: data
     port: 5984

@@ -5,3 +5,5 @@ data/
 notes-*
 dumps/*
 old/
+test/
+examples/

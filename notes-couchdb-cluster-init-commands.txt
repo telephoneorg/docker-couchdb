@@ -1,5 +1,9 @@
 CouchDB Cluster init commands
 
+for db in _users _replicator _global_changes; do
+    curl -X HEAD $COUCHDB_URI/_users
+done
+
 curl -X POST -H "Content-Type: application/json" http://couchdb-a.local:5984/_cluster_setup -d '{"action": "enable_cluster", "username": "admin", "password": "password"}'
 
 curl -X POST -H "Content-Type: application/json" http://couchdb-b.local:5984/_cluster_setup -d '{"action": "enable_cluster", "username": "admin", "password": "password"}'

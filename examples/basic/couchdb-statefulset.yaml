@@ -1,0 +1,33 @@
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: couchdb
+spec:
+  serviceName: couchdb
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: couchdb
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+      - name: couchdb
+        image: callforamerica/couchdb:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: COUCHDB_ADMIN_USER
+          value: admin
+        - name: COUCHDB_ADMIN_PASS
+          value: secret
+        - name: ERLANG_COOKIE
+          value: insecure-cookie
+        ports:
+        - name: data
+          containerPort: 5984
+        - name: admin
+          containerPort: 5986
+      - name: couchdiscover
+        image: callforamerica/couchdiscover:latest
+        imagePullPolicy: IfNotPresent
+      restartPolicy: Always

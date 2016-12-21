@@ -1,5 +1,5 @@
 NS = vp
-NAME = couchdb-app
+NAME = couchdb
 APP_VERSION = 2.0.0
 IMAGE_VERSION = 2.5
 VERSION = $(APP_VERSION)-$(IMAGE_VERSION)
@@ -15,7 +15,7 @@ GITHUB_REPO = docker-couchdb
 DOCKER_REPO = couchdb
 BUILD_BRANCH = master
 
-VOLUME_ARGS = --tmpfs /volumes/$(NAME)/data:size=512M
+# VOLUME_ARGS = --tmpfs /volumes/$(NAME)/data:size=512M
 PORT_ARGS = -p "5984:5984" -p "5986:5986"
 DSHELL = bash -l
 
@@ -192,6 +192,5 @@ rmi:
 
 # kube-shell:
 # 	@kubectl exec -ti $(shell kubectl get po | grep $(NAME) | cut -d' ' -f1) -- bash
-
 
 default: build

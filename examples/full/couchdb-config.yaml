@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: couchdb-config
+  labels:
+    app: couchdb
+data:
+  erlang.threads: '25'
+  couchdb.log-level: info
+  couchdb.require-valid-user: 'false'
+  couchdb.shards: '4'
+  couchdb.replicas: '3'
+  couchdb.read-quorum: '1'
+  couchdb.write-quorum: '2'
+  couchdiscover.log-level: info

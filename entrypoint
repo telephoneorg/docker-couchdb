@@ -10,7 +10,6 @@ if [ -f /etc/default/$APP ]; then
 fi
 
 : declare -ir ${ERLANG_THREADS:=25}
-
 # options: debug info warning error none
 : readonly ${COUCHDB_LOG_LEVEL:=info}
 : readonly ${COUCHDB_DATA_PATH:=/data/$APP}
@@ -20,28 +19,16 @@ fi
 : declare -ir ${COUCHDB_SHARDS:=4}
 : declare -ir ${COUCHDB_READ_QUORUM:=1}
 : declare -ir ${COUCHDB_WRITE_QUORUM:=1}
-: declare -ir ${COUCHDB_REPLICAS:=3}
-
-function log() {
-	local msg=$1
-	local date=$(date "+%Y-%m-%d %H:%M:%S")
-	echo -e "\E[36m[*]\E[0m [$date]: $msg" 
-}
-
-function errlog() {
-	local msg=$1
-	local date=$(date "+%Y-%m-%d %H:%M:%S")
-	echo -e "\E[31m[x]\E[0m [$date]: $msg" >&2
-}
+: declare -ir ${COUCHDB_REPLICAS:=1}
 
 
-log "Writing vm.args file ..."
+log::info "Writing vm.args file ..."
 tee ~/etc/vm.args <<EOF
 # Turn off the sasl error logger
 -sasl sasl_error_logger false
 
-# Use the following erlang long hostname
--name couchdb
+# Use the following erlang hostname
+$(erlang::vmargs::get-name)
 
 # Use kernel poll functionality if supported by emulator
 +K true
@@ -60,7 +47,8 @@ tee ~/etc/vm.args <<EOF
 +Bd -noinput
 EOF
 
-log "Rewriting local.ini file ..."
+
+log::info "Rewriting local.ini file ..."
 tee ~/etc/local.ini <<EOF
 [couchdb]
 database_dir = $COUCHDB_DATA_PATH
@@ -86,23 +74,13 @@ w=$COUCHDB_WRITE_QUORUM
 level = ${COUCHDB_LOG_LEVEL,,}
 EOF
 
-rm -rf ~/.erlang.cookie
-echo "Cookie is: ${ERLANG_COOKIE:-insecure-cookie}"
-echo "${ERLANG_COOKIE:-insecure-cookie}" > ~/.erlang.cookie
-chown $USER:$USER ~/.erlang.cookie
-chmod 600 $_
-cat $_
 
+log::info "Ensuring correct permissions ..."
+chown -R $USER:$USER ~ /{volumes,data}/$APP /volumes/$APP/{data,dumps}
 
-log "Ensuring correct permissions ..."
-chown -R $USER:$USER \
-	~ \
-	/{volumes,data}/$APP \
-	/volumes/$APP/{data,dumps,templates,config}
-
+log::info "Starting $APP ..."
 cd ~
-	log "Starting $APP ..."
-	# for interpreting crash dumps see: 
-	#   http://erlang.org/doc/apps/erts/crash_dump.html
-	export ERL_CRASH_DUMP=/dev/termination-log
+	# for local dev clusters.  see: /usr/local/bin/couch-helper
+	[[ $LOCAL_DEV_CLUSTER = true ]] && gosu $USER couch-helper &
+
 	exec gosu $USER couchdb 2>&1
