@@ -60,10 +60,6 @@ apt-get purge -qq -y --auto-remove \
 apt-get install -qq -y libicu52
 
 
-log::m-info "Adding $APP environment to bash profile ..."
-echo /path >> /etc/paths.d/20-${APP}
-
-
 log::m-info "Adding app init to bash profile ..."
 tee /etc/entrypoint.d/50-${APP}-init <<'EOF'
 # write the erlang cookie
