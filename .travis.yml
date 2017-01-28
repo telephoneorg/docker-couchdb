@@ -30,6 +30,7 @@ script:
 - sleep 10
 - make test
 
+after_success:
 - make tag ALT_TAG=${TRAVIS_COMMIT::6}
 - make tag ALT_TAG=travis-$TRAVIS_BUILD_NUMBER
 - make hub-login
