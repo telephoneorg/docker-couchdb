@@ -1,0 +1,48 @@
+function log::_show-msg {
+    local symbol_map
+    declare -A symbol_map=(
+        [success]='*'
+        [fail]='x'
+    )
+    local color_map
+    declare -A color_map=(
+        [success]='32'
+        [fail]='31'
+    )
+    local msg="$1"
+    local type="${2:-info}"
+    local symbol="${symbol_map[$type]}"
+    local color="${color_map[$type]}"
+    echo -e "\E[${color}m[${symbol}]\E[0m ${msg}" >&2
+}
+
+function echo::success {
+    local msg="$@"
+    log::_show-msg "$msg" 'success'
+}
+
+function echo::fail {
+    local msg="$@"
+    log::_show-msg "$msg" 'fail'
+}
+
+function echo::test {
+    local msg="$@"
+    echo -e "\n$msg" >&2
+    echo -e "\E[34m------------------------------------------------------------------------------\E[0m" >&2
+}
+
+function echo::info {
+    local msg="$@"
+    echo -e "\n$msg" >&2
+}
+
+function echo::header {
+    local msg="$@"
+    echo -e "\n\E[36m${msg}\E[0m" >&2
+    echo -e "\E[34m******************************************************************************\E[0m" >&2
+}
+
+function get-name {
+    basename $PWD | cut -d'-' -f2
+}

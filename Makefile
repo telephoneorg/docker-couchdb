@@ -1,196 +1,108 @@
-NS = vp
-NAME = couchdb
-APP_VERSION = 2.0.0
-IMAGE_VERSION = 2.5
-VERSION = $(APP_VERSION)-$(IMAGE_VERSION)
-TYPE = app
+SHELL = /bin/zsh
+SHELLFLAGS = -c
 
-LOCAL_TAG = $(NS)/$(NAME):$(VERSION)
+NAME := $(shell basename $(PWD) | cut -d'-' -f2)
+BRANCH ?= $(shell basename $(shell git status | head -1 | rev | cut -d" " -f1 | rev))
+ifeq ($(BRANCH),master)
+	TAG := latest
+else
+	TAG := $(BRANCH)
+endif
+DOCKER_USER ?= callforamerica
+DOCKER_IMAGE := $(DOCKER_USER)/$(NAME):$(TAG)
 
-REGISTRY = callforamerica
-ORG = vp
-REMOTE_TAG = $(REGISTRY)/$(NAME)
+BUILD_TOKEN = aa10a848-ccc4-46ab-a67d-b345c45b6e3c
 
-GITHUB_REPO = docker-couchdb
-DOCKER_REPO = couchdb
-BUILD_BRANCH = master
-
-# VOLUME_ARGS = --tmpfs /volumes/$(NAME)/data:size=512M
+CSHELL = bash -l
+ENV_ARGS = --env-file default.env
 PORT_ARGS = -p "5984:5984" -p "5986:5986"
-DSHELL = bash -l
+# VOLUME_ARGS = --tmpfs /volumes/$(NAME)/data:size=512M
 
 -include ../Makefile.inc
 
-.PHONY: all build test release shell run start stop rm rmi default
-
-all: build
-
-checkout:
-	@git checkout $(BUILD_BRANCH)
+.PHONY: all build rebuild tag info test run launch shell launch-as-dep
+.PHONY: rmf-as-dep logs start kill stop rm rmi rmf hub-login hub-push hub-build
+.PHONY: kube-local kube-local-rm kube-deploy kube-rm
 
 build:
-	@docker build -t $(LOCAL_TAG) --force-rm .
-	@$(MAKE) tag
-	@$(MAKE) dclean
-
-clean-pvc:
-	@-kubectl delete pv -l app=$(NAME)
-	@-kubectl delete pvc -l app=$(NAME)
-
-# patch-two:
-# 	kubectl patch petset $(NAME) -p '{"spec": {"replicas": 2}}' 
-# 	kubectl get po --watch
-
-# patch-three:
-# 	kubectl patch petset $(NAME) -p '{"spec": {"replicas": 3}}' 
-
-# test-down:
-# 	-kubectl delete petset $(NAME)
-# 	-kubectl delete po -l app=$(NAME)
-# 	$(MAKE) clean-pvc
-
-# test-up:
-# 	$(MAKE) load-pvs
-# 	$(MAKE) load-pvcs
-# 	sleep 10
-# 	kubectl create -f kubernetes/$(NAME)-petset.yaml
-# 	kubectl get po --watch
-
-# test-multi-up:
-# 	$(ENV_ARGS)
-# 	@docker run -d --name $(NAME)-a -h $(NAME)-a.local $(ENV_ARGS) $(VOLUME_ARGS) $(PORT_ARGS) --network=local --net-alias $(NAME)-a.local $(LOCAL_TAG)
-# 	@docker run -d --name $(NAME)-b -h $(NAME)-b.local $(ENV_ARGS) $(VOLUME_ARGS) --network=local --net-alias $(NAME)-b.local $(LOCAL_TAG)
-# 	@docker run -d --name $(NAME)-c -h $(NAME)-c.local $(ENV_ARGS) $(VOLUME_ARGS) --network=local --net-alias $(NAME)-c.local $(LOCAL_TAG)
-
-# test-multi-down:
-# 	@docker rm -f $(NAME)-a $(NAME)-b $(NAME)-c
-
-# retest:
-# 	@$(MAKE) test-down
-# 	@sleep 10
-# 	@$(MAKE) test-up
-
-tag:
-	@docker tag $(LOCAL_TAG) $(REMOTE_TAG)
+	@docker build -t $(DOCKER_IMAGE) --force-rm .
+	@-test $(LOCAL) && $(MAKE) dclean
 
 rebuild:
-	@docker build -t $(LOCAL_TAG) --force-rm --no-cache .
-	@$(MAKE) tag
-	@$(MAKE) dclean
+	@docker build -t $(DOCKER_IMAGE) --force-rm --no-cache .
+	@-test $(LOCAL) && $(MAKE) dclean
 
-commit:
-	@git add -A .
-	@git commit
+tag:
+	@test $(ALT_TAG) && \
+		docker tag $(DOCKER_IMAGE) $(DOCKER_USER)/$(NAME):$(ALT_TAG)
 
-push:
-	@git push origin master
+info:
+	@echo "NAME: 		$(NAME)"
+	@echo "BRANCH: 	$(BRANCH)"
+	@echo "TAG: 		$(TAG)"
+	@echo "DOCKER_USER: 	$(DOCKER_USER)"
+	@echo "DOCKER_IMAGE: 	$(DOCKER_IMAGE)"
 
-shell:
-	@docker exec -ti $(NAME) $(_SHELL)
+test:
+	@tests/run
 
 run:
-	@docker run -it --rm --name $(NAME) -h $(NAME).local $(LOCAL_TAG) $(_SHELL)
+	@docker run -it --rm --name $(NAME).local \
+		$(ENV_ARGS) $(DOCKER_IMAGE) $(CSHELL)
 
 launch:
-	@docker run -d --name $(NAME) -h $(NAME).local $(VOLUME_ARGS) $(PORT_ARGS) $(LOCAL_TAG)
+	@docker run -d --name $(NAME) -h $(NAME).local \
+		$(ENV_ARGS) $(VOLUME_ARGS) $(PORT_ARGS) $(DOCKER_IMAGE)
 
-launch-net:
-	@docker run -d --name $(NAME) -h $(NAME).local $(VOLUME_ARGS) $(PORT_ARGS) --network=local --net-alias $(NAME).local $(LOCAL_TAG)
-
-launch-net-b:
-	@docker run -d --name $(NAME)-b -h $(NAME)-b.local $(VOLUME_ARGS) --network=local --net-alias $(NAME)-b.local $(LOCAL_TAG)
-
-launch-dev:
-	@$(MAKE) launch-net
-
-rmf-dev:
-	@$(MAKE) rmf
+shell:
+	@docker exec -ti $(NAME) $(CSHELL)
 
 launch-as-dep:
-	@$(MAKE) launch-net
+	@$(MAKE) launch
 
 rmf-as-dep:
 	@$(MAKE) rmf
 
 logs:
-	@docker logs $(NAME)
-
-logsf:
 	@docker logs -f $(NAME)
 
 start:
 	@docker start $(NAME)
 
 kill:
-	@docker kill $(NAME)
+	@-docker kill $(NAME)
 
 stop:
-	@docker stop $(NAME)
+	@-docker stop $(NAME)
 
 rm:
-	@docker rm $(NAME)
-
-rmf:
-	@docker rm -f $(NAME)
+	@-docker rm $(NAME)
 
 rmi:
-	@docker rmi $(LOCAL_TAG)
-	@docker rmi $(REMOTE_TAG)
+	@-docker rmi $(DOCKER_IMAGE)
 
-# dclean:
-# 	@-docker ps -aq | gxargs -I{} docker rm {} 2> /dev/null || true
-# 	@-docker images -f dangling=true -q | xargs docker rmi
-# 	@-docker volume ls -f dangling=true -q | xargs docker volume rm
+rmf:
+	@-docker rm --force $(NAME)
 
-# kube-deploy-pvs:
-# 	@kubectl create -f kubernetes/$(NAME)-pvs.yaml
+hub-login:
+	@docker login -u $(DOCKER_USER) -p $(DOCKER_PASS)
 
-# kube-deploy-pvcs:
-# 	@kubectl create -f kubernetes/$(NAME)-pvcs.yaml
+hub-push:
+	@docker push $(DOCKER_USER)/$(NAME)
 
-# kube-deploy:
-# 	@$(MAKE) kube-deploy-petset
-	
-# kube-deploy-petset:
-# 	@kubectl create -f kubernetes/$(NAME)-petset.yaml
+hub-build:
+	@curl -s -X POST -H "Content-Type: application/json" \
+		--data '{"docker_tag": "$(TAG)"}' \
+		https://registry.hub.docker.com/u/$(DOCKER_USER)/$(NAME)/trigger/$(BUILD_TOKEN)/
 
-# kube-edit-petset:
-# 	@kubectl edit petset/$(NAME)
+kube-local:
+	@kubectl apply -f tests/manifests/local.yaml
 
-# kube-delete-petset:
-# 	@kubectl delete petset/$(NAME)
+kube-local-rm:
+	@kubectl delete -f tests/manifests/local.yaml
 
-# kube-deploy-service:
-# 	@kubectl create -f kubernetes/$(NAME)-service.yaml
-# 	@kubectl create -f kubernetes/$(NAME)-service-balanced.yaml
+kube-deploy:
+	@kubectl apply -f kubernetes
 
-# kube-delete-service:
-# 	@kubectl delete svc $(NAME)
-# 	@kubectl delete svc $(NAME)bal
-
-# kube-apply-service:
-# 	@kubectl apply -f kubernetes/$(NAME)-service.yaml
-# 	@kubectl apply -f kubernetes/$(NAME)-service-balanced.yaml
-
-# kube-load-pvs:
-# 	@kubectl create -f kubernetes/$(NAME)-pvs.yaml
-
-# kube-load-pvcs:
-# 	@kubectl create -f kubernetes/$(NAME)-pvcs.yaml
-
-# kube-delete-pvs:
-# 	@kubectl delete -f kubernetes/$(NAME)-pvs.yaml
-
-# kube-delete-pvcs:
-# 	@kubectl delete -f kubernetes/$(NAME)-pvcs.yaml
-
-# kube-logsf:
-# 	@kubectl logs -f $(shell kubectl get po | grep $(NAME) | cut -d' ' -f1)
-
-# kube-logsft:
-# 	@kubectl logs -f --tail=25 $(shell kubectl get po | grep $(NAME) | cut -d' ' -f1)
-
-# kube-shell:
-# 	@kubectl exec -ti $(shell kubectl get po | grep $(NAME) | cut -d' ' -f1) -- bash
-
-default: build
+kube-rm:
+	@kubectl delete -f kubernetes

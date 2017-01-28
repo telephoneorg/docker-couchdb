@@ -1,8 +1,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: couchdb-bal
+  name: couchdb
+  labels:
+    app: couchdb
+    project: valuphone
+    environment: production
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: 'true'
 spec:
+  clusterIP: None
   selector:
     app: couchdb
     project: valuphone

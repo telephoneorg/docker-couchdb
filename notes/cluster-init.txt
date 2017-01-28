@@ -12,7 +12,7 @@ curl -X POST -H "Content-Type: application/json" http://couchdb-c.local:5984/_cl
 
 curl -X POST http://admin:secret@couchdb-a.local:5984/_cluster_setup \
     -H 'Content-Type: application/json' \
-    -d '{"action": "add_node", "host": "couchdb-c.local", "username": "admin", "password": "secret"}' 
+    -d '{"action": "add_node", "host": "couchdb-c.local", "username": "admin", "password": "secret"}'
 
 curl -X POST -H 'Content-Type: application/json' -d '{"action": "add_node", "host": "couchdb-c.local", "username": "admin", "password": "password"}' http://admin:password@localhost:5984/_cluster_setup
 
@@ -38,7 +38,7 @@ curl localhost:5986/_all_dbs
 curl -X POST -H 'Content-Type: application/json' http://localhost:5984/_cluster_setup -d '{"action": "finish_cluster"}'
 
 
-# Let's test if you can create the 
+# Let's test if you can create the
 
 curl -X POST -H 'Content-Type: application/json' http://localhost:5984/_cluster_setup -d '{"action": "finish_cluster"}'
 
@@ -46,7 +46,7 @@ curl -X POST -H 'Content-Type: application/json' http://couchdb-b.local:5984/_cl
 
 curl -X POST -H 'Content-Type: application/json' http://couchdb-c.local:5984/_cluster_setup -d '{"action": "finish_cluster"}'
 
-add_node() 
+add_node()
 {
     local rhost="$1"
     [[ -z $rhost ]] && return 1

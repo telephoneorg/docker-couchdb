@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+base_dir=$(dirname $0)
+
+for file in functions vars.env defaults.env; do
+    if [[ -f $base_dir/assets/$file ]]; then
+        source $base_dir/assets/$file
+    fi
+done
+
+if (($TEST_DELAY > 0)); then
+    echo::info "Delaying tests for $TEST_DELAY seconds ..."
+    sleep $TEST_DELAY
+fi
+
+for script in $(find $base_dir -name "*.sh"); do
+    source "$script"
+    ret=$?
+    if (($ret > 0)); then
+        echo::fail "$script failed, ret: $ret"
+        echo::fail "aborting tests!!"
+        exit $ret
+    fi
+    echo >&2
+done

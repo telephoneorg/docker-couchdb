@@ -1,42 +1,29 @@
-#!/bin/bash
+#!/bin/bash -l
 
 set -e
-
-readonly APP=couchdb
-readonly USER=$APP
-
-function get_apt_version() {
-    local app=${1:-$app}
-    local vvar=${2:-$app}; vvar=${vvar^^}_VERSION
-    local version=${!vvar}
-    apt-cache madison $app | awk '{print $3}' | grep $version | sort -rn | head -1
-}
 
 # Use local cache proxy if it can be reached, else nothing.
 eval $(detect-proxy enable)
 
+build::user::create $USER
 
-echo "Creating user and group for $USER ..."
-useradd --system --home-dir ~ --create-home --shell=/bin/false --user-group $USER
-
-
-echo "Installing erlang repos ..."
-apt-key adv --keyserver pgp.mit.edu --recv-keys 434975BD900CCBE4F7EE1B1ED208507CA14F4FCA
-echo 'deb http://packages.erlang-solutions.com/debian jessie contrib' > /etc/apt/sources.list.d/erlang.list
-apt-get update
+log::m-info "Installing erlang repo ..."
+build::apt::add-key 434975BD900CCBE4F7EE1B1ED208507CA14F4FCA
+echo 'deb http://packages.erlang-solutions.com/debian jessie contrib' > \
+    /etc/apt/sources.list.d/erlang.list
+apt-get -q update
 
 
-echo "Installing essentials ..."
-apt-get install -y curl
-
-echo "Calculating versions ..."
-readonly apt_erlang_version=$(get_apt_version erlang)
-echo "erlang: $apt_erlang_version"
+log::m-info "Installing essentials ..."
+apt-get install -qq -y curl
 
 
-echo "Installing dependencies ..."
-apt-get install -y \
-    erlang=$apt_erlang_version \
+log::m-info "Installing $APP ..."
+apt_erlang_vsn=$(build::apt::get-version erlang)
+
+log::m-info "apt versions: erlang: $apt_erlang_vsn"
+apt-get install -qq -y \
+    erlang=$apt_erlang_vsn \
     build-essential \
     libcurl4-openssl-dev \
     libicu-dev \
@@ -44,7 +31,7 @@ apt-get install -y \
     pkg-config
 
 
-echo "Downloading $APP ..."
+log::m-info "Downloading $APP ..."
 mkdir -p /tmp/couchdb
 pushd $_
     curl -sSL \
@@ -62,7 +49,7 @@ pushd $_
 
 
 echo "Purging unneeded ..."
-apt-get purge -y --auto-remove \
+apt-get purge -qq -y --auto-remove \
     build-essential \
     ca-certificates \
     erlang \
@@ -70,11 +57,15 @@ apt-get purge -y --auto-remove \
     libicu-dev \
     pkg-config
 
-apt-get install -y libicu52
+apt-get install -qq -y libicu52
 
 
-echo "Adding bash profile hook to write erlang cookie ..."
-tee /etc/profile.d/80-write-erlang-cookie.sh <<EOF
+log::m-info "Adding $APP environment to bash profile ..."
+echo /path >> /etc/paths.d/20-${APP}
+
+
+log::m-info "Adding app init to bash profile ..."
+tee /etc/entrypoint.d/50-${APP}-init <<'EOF'
 # write the erlang cookie
 erlang-cookie write
 
@@ -83,13 +74,13 @@ erlang::set-erl-dump
 EOF
 
 
-echo "Creating directories and files ..."
+log::m-info "Cleaning up unnecessary files ..."
 mkdir -p /volumes/$APP/{data,dumps}
 mkdir -p /data
 ln -s /volumes/$APP/data /data/$APP
 
 
-echo "Setting Ownership & Permissions ..."
+log::m-info "Setting Ownership & Permissions ..."
 chown -R $USER:$USER ~ /volumes/$APP/{data,dumps} /data
 
 find ~ -type d -exec chmod 0770 {} \;
@@ -97,7 +88,7 @@ chmod 0777 /volumes/$APP/dumps
 chmod 0644 ~/etc/*
 
 
-echo "Cleaning up ..."
+log::m-info "Cleaning up ..."
 apt-clean --aggressive
 
 # if applicable, clean up after detect-proxy enable

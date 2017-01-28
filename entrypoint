@@ -2,12 +2,8 @@
 
 set -e
 
-APP=couchdb
-USER=$APP
-
-if [ -f /etc/default/$APP ]; then
-	. /etc/default/$APP
-fi
+[[ -f /etc/entrypoint ]] && . /etc/entrypoint
+[[ -f /etc/default/$APP ]] && . /etc/default/$APP
 
 : declare -ir ${ERLANG_THREADS:=25}
 # options: debug info warning error none
@@ -21,14 +17,16 @@ fi
 : declare -ir ${COUCHDB_WRITE_QUORUM:=1}
 : declare -ir ${COUCHDB_REPLICAS:=1}
 
+: readonly ${LOCAL_DEV_CLUSTER:=false}
 
-log::info "Writing vm.args file ..."
+
+log::m-info "Writing vm.args file ..."
 tee ~/etc/vm.args <<EOF
 # Turn off the sasl error logger
 -sasl sasl_error_logger false
 
 # Use the following erlang hostname
-$(erlang::vmargs::get-name)
+$(erlang::vmargs::get-name couchdb)
 
 # Use kernel poll functionality if supported by emulator
 +K true
@@ -37,7 +35,7 @@ $(erlang::vmargs::get-name)
 +A $ERLANG_THREADS
 
 # Turn off the kernel error_logger
--kernel error_logger silent 
+-kernel error_logger silent
 
 # Set erlang distribution to use 11500-11999 ports instead of random
 # predictibility has value here
@@ -48,7 +46,7 @@ $(erlang::vmargs::get-name)
 EOF
 
 
-log::info "Rewriting local.ini file ..."
+log::m-info "Rewriting local.ini file ..."
 tee ~/etc/local.ini <<EOF
 [couchdb]
 database_dir = $COUCHDB_DATA_PATH
@@ -72,15 +70,16 @@ w=$COUCHDB_WRITE_QUORUM
 
 [log]
 level = ${COUCHDB_LOG_LEVEL,,}
+
 EOF
 
 
-log::info "Ensuring correct permissions ..."
+log::m-info "Ensuring correct permissions ..."
 chown -R $USER:$USER ~ /{volumes,data}/$APP /volumes/$APP/{data,dumps}
 
-log::info "Starting $APP ..."
-cd ~
-	# for local dev clusters.  see: /usr/local/bin/couch-helper
-	[[ $LOCAL_DEV_CLUSTER = true ]] && gosu $USER couch-helper &
 
-	exec gosu $USER couchdb 2>&1
+log::m-info "Starting $APP ..."
+cd ~
+    # for local dev clusters.  see: /usr/local/bin/couchdb-helper
+    [[ $LOCAL_DEV_CLUSTER == true ]] && gosu $USER couchdb-helper &
+    exec gosu $USER couchdb 2>&1

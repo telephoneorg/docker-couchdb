@@ -2,6 +2,10 @@ apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
   name: couchdb
+  labels:
+    app: couchdb
+    project: valuphone
+    environment: production
 spec:
   serviceName: couchdb
   replicas: 3
@@ -35,37 +39,37 @@ spec:
         - name: ERLANG_THREADS
           valueFrom:
             configMapKeyRef:
-              name: couchdb-config
+              name: couchdb
               key: erlang.threads
         - name: COUCHDB_LOG_LEVEL
           valueFrom:
             configMapKeyRef:
-              name: couchdb-config
-              key: couchdb.log-level
+              name: couchdb
+              key: couchdb.log.level
         - name: COUCHDB_REQUIRE_VALID_USER
           valueFrom:
             configMapKeyRef:
-              name: couchdb-config
+              name: couchdb
               key: couchdb.require-valid-user
         - name: COUCHDB_SHARDS
           valueFrom:
             configMapKeyRef:
-              name: couchdb-config
+              name: couchdb
               key: couchdb.shards
         - name: COUCHDB_REPLICAS
           valueFrom:
             configMapKeyRef:
-              name: couchdb-config
+              name: couchdb
               key: couchdb.replicas
         - name: COUCHDB_READ_QUORUM
           valueFrom:
             configMapKeyRef:
-              name: couchdb-config
+              name: couchdb
               key: couchdb.read-quorum
         - name: COUCHDB_WRITE_QUORUM
           valueFrom:
             configMapKeyRef:
-              name: couchdb-config
+              name: couchdb
               key: couchdb.write-quorum
         ports:
         - name: data
@@ -81,7 +85,7 @@ spec:
             memory: 1Gi
         readinessProbe:
           httpGet:
-            path: /
+            path: /_up
             port: 5984
           initialDelaySeconds: 10
           timeoutSeconds: 3
@@ -100,14 +104,14 @@ spec:
           mountPath: /volumes/couchdb/data
         imagePullPolicy: Always
       - name: couchdiscover
-        image: callforamerica/couchdiscover
+        image: callforamerica/couchdiscover:latest
+        imagePullPolicy: IfNotPresent
         env:
         - name: LOG_LEVEL
           valueFrom:
             configMapKeyRef:
-              name: couchdb-config
-              key: couchdiscover.log-level
-        imagePullPolicy: Always
+              name: couchdb
+              key: couchdiscover.log.level
       restartPolicy: Always
   volumeClaimTemplates:
   - metadata:

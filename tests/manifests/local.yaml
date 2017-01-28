@@ -1,7 +1,94 @@
+# create creds:          kubectl create secret generic couchdb-creds --from-literal=couchdb.user=$(sed $(perl -e "print int rand(99999)")"q;d" /usr/share/dict/words) --from-literal=couchdb.pass=$(LC_ALL=C tr -cd '[:alnum:]' < /dev/urandom | head -c 32)
+# create erlang cookie:  kubectl create secret generic erlang-cookie --from-literal=erlang.cookie=$(LC_ALL=C tr -cd '[:alnum:]' < /dev/urandom | head -c 64)
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: couchdb-creds
+  labels:
+    app: couchdb
+    test: 'true'
+    environment: testing
+type: Opaque
+data:
+  couchdb.pass: RVZCNklCQVhWMTlUWEtlQWZ4dWRUQkk0RVk3dzljaWk=
+  couchdb.user: Y29sbGFib3JhdGU=
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: erlang-cookie
+  labels:
+    app: couchdb
+    test: 'true'
+    environment: testing
+type: Opaque
+data:
+  erlang.cookie: WlgyZVA4Umo4cnVmUjVJbjNnWGV1akhYNllseEREbnRyd3ZROE5kcGd3OXFOQjZ5UFhPUWhxNFF4bEc0WnZaQQ==
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: couchdb
+  labels:
+    app: couchdb
+    test: 'true'
+    environment: testing
+data:
+  erlang.threads: '25'
+  couchdb.log.level: info
+  couchdb.require-valid-user: 'false'
+  couchdb.shards: '4'
+  couchdb.replicas: '3'
+  couchdb.read-quorum: '1'
+  couchdb.write-quorum: '2'
+  couchdiscover.log.level: info
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: couchdb
+  labels:
+    app: couchdb
+    test: 'true'
+    environment: testing
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: 'true'
+spec:
+  clusterIP: None
+  selector:
+    app: couchdb
+  ports:
+  - name: data
+    port: 5984
+  - name: admin
+    port: 5986
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: couchdb-bal
+  labels:
+    app: couchdb
+    test: 'true'
+    environment: testing
+spec:
+  selector:
+    app: couchdb
+  ports:
+  - name: data
+    port: 5984
+  - name: admin
+    port: 5986
+---
 apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
   name: couchdb
+  labels:
+    app: couchdb
+    test: 'true'
+    environment: testing
 spec:
   serviceName: couchdb
   replicas: 3
@@ -9,6 +96,8 @@ spec:
     metadata:
       labels:
         app: couchdb
+        test: 'true'
+        environment: testing
     spec:
       terminationGracePeriodSeconds: 30
       containers:
@@ -34,53 +123,46 @@ spec:
         - name: ERLANG_THREADS
           valueFrom:
             configMapKeyRef:
-              name: couchdb-config
+              name: couchdb
               key: erlang.threads
         - name: COUCHDB_LOG_LEVEL
           valueFrom:
             configMapKeyRef:
-              name: couchdb-config
+              name: couchdb
               key: couchdb.log.level
         - name: COUCHDB_REQUIRE_VALID_USER
           valueFrom:
             configMapKeyRef:
-              name: couchdb-config
+              name: couchdb
               key: couchdb.require-valid-user
         - name: COUCHDB_SHARDS
           valueFrom:
             configMapKeyRef:
-              name: couchdb-config
+              name: couchdb
               key: couchdb.shards
         - name: COUCHDB_REPLICAS
           valueFrom:
             configMapKeyRef:
-              name: couchdb-config
+              name: couchdb
               key: couchdb.replicas
         - name: COUCHDB_READ_QUORUM
           valueFrom:
             configMapKeyRef:
-              name: couchdb-config
+              name: couchdb
               key: couchdb.read-quorum
         - name: COUCHDB_WRITE_QUORUM
           valueFrom:
             configMapKeyRef:
-              name: couchdb-config
+              name: couchdb
               key: couchdb.write-quorum
         ports:
         - name: data
           containerPort: 5984
         - name: admin
           containerPort: 5986
-        resources:
-          requests:
-            cpu: 1
-            memory: 1Gi
-          limits:
-            cpu: 1
-            memory: 1Gi
         readinessProbe:
           httpGet:
-            path: /_up
+            path: /
             port: 5984
           initialDelaySeconds: 10
           timeoutSeconds: 3
@@ -88,15 +170,12 @@ spec:
           failureThreshold: 5
         livenessProbe:
           httpGet:
-            path: /_up
+            path: /
             port: 5984
-          initialDelaySeconds: 10
+          initialDelaySeconds: 15
           timeoutSeconds: 3
           successThreshold: 1
           failureThreshold: 5
-        volumeMounts:
-        - name: couchdb-data
-          mountPath: /volumes/couchdb/data
       - name: couchdiscover
         image: callforamerica/couchdiscover:latest
         imagePullPolicy: IfNotPresent
@@ -104,15 +183,6 @@ spec:
         - name: LOG_LEVEL
           valueFrom:
             configMapKeyRef:
-              name: couchdb-config
+              name: couchdb
               key: couchdiscover.log.level
       restartPolicy: Always
-  volumeClaimTemplates:
-  - metadata:
-      name: couchdb-data
-    spec:
-      accessModes:
-      - ReadWriteOnce
-      resources:
-        requests:
-          storage: 8Gi

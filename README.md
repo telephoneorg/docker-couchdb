@@ -1,328 +1,120 @@
-# CouchDB 2.0
+# CouchDB 2.0 (stable) for Kubernetes w/ manifests
 
-![docker automated build](https://img.shields.io/docker/automated/callforamerica/couchdb.svg) ![docker pulls](https://img.shields.io/docker/pulls/callforamerica/couchdb.svg)
-
+[![Build Status](https://travis-ci.org/sip-li/docker-couchdb.svg?branch=master)](https://travis-ci.org/sip-li/docker-couchdb) [![Docker Pulls](https://img.shields.io/docker/pulls/callforamerica/couchdb.svg)](https://store.docker.com/community/images/callforamerica/couchdb)
 
 ## Maintainer
 
-Joe Black <joe@valuphone.com>
+Joe Black <joeblack949@gmail.com>
+
+## Description
+
+Minimal image with a sidecar container that performs automatic cluster initialization.  This image uses a custom version of Debian Linux (Jessie) that I designed weighing in at ~22MB compressed.
+
+## Build Environment
+
+Build environment variables are often used in the build script to bump version numbers and set other options during the docker build phase.  Their values can be overridden using a build argument of the same name.
+
+* `ERLANG_VERSION`
+* `COUCHDB_VERSION`
+
+The following variables are standard in most of our dockerfiles to reduce duplication and make scripts reusable among different projects:
+
+* `APP`: couchdb
+* `USER`: couchdb
+* `HOME` /opt/couchdb
 
 
-## Introduction
+## Run Environment
 
-CouchDB 2.0 for use in a kubernetes pod.
-
-Now using a CouchDiscover sidecar container to do autoclustering of CouchDB 2.0 under Kubernetes.
-
-
-## Usage
-
-Create a secret to hold the couchdb credentials.  
-*Names and keys don't matter here as long as they match those used in the petset spec* 
-Use and modify the the following commands to generate the base64 encoded data needed for this step.
-
-```bash
-# base64 encode a username
-echo -n admin | base64
-# generate and base64 encode a password
-python -c 'import os,base64; print base64.b64encode(os.urandom(32))' | base64
-```
-
-```yaml
-# couchdb-creds.yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: couchdb-creds
-type: Opaque
-data:
-  couchdb.user: [encoded-username-from-above]
-  couchdb.pass: [encoded-password-from-above]
-```
-
-Create another secret for the erlang-cookie.  This isn't required but is highly suggested.
-
-```bash
-# generate and base64 encode a password
-python -c 'import os,base64; print base64.b64encode(os.urandom(64))' | base64
-```
-
-```yaml
-# erlang-cookie.yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: erlang-cookie
-type: Opaque
-data:
-  erlang.cookie: [encoded-erlang-cookie-from-above]
-```
-
-Now create both secrets in kubernetes
-
-```bash
-kubectl create -f couchdb-creds.yaml
-kubectl create -f erlang-cookie.yaml
-```
-
-Create a configmap holding the configration for CouchDB.
-*This isn't a necessary step but you will need to set your environment values in the petset inline during the last step*
-
-Note: I have included alot of different environment variable hooks in my CouchDB image so that all important configuration information can be manipulated at container run.
-
-```yaml
-# couchdb-config.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: couchdb-config
-  labels:
-    app: couchdb
-data:
-  erlang.threads: '25'
-  couchdb.log-level: info
-  couchdb.require-valid-user: 'false'
-  couchdb.shards: '4'
-  couchdb.replicas: '3'
-  couchdb.read-quorum: '1'
-  couchdb.write-quorum: '2'
-  
-  couchdiscover.log-level: info
-```
-
-Now create the configmap in kubernetes
-
-```bash
-kubectl create -f couchdb-config.yaml
-```
-
-Create a headless service for the petset that will tolerate unready endpoints.
-* *This is required for proper dns resolution*
-* *Names here don't matter but need to match what is used in the petset spec*
-
-```yaml
-# couchdb-service-headless.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: couchdb
-  annotations:
-    service.alpha.kubernetes.io/tolerate-unready-endpoints: 'true'
-spec:
-  clusterIP: None
-  selector:
-    app: couchdb
-  ports:
-  - name: data
-    protocol: TCP
-    port: 5984
-  - name: admin
-    protocol: TCP
-    port: 5986
-```
-
-```bash
-kubectl create -f couchdb-service-headless.yaml
-```
-
-Create a normal service in order to obtain a clusterIP and load balance requests across couch servers.*Name doesn't matter but will effect how you discover the service through DNS*
-
-```yaml
-# couchdb-service-balanced.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: couchdb-bal
-spec:
-  selector:
-    app: couchdb
-  ports:
-  - name: data
-    protocol: TCP
-    port: 5984
-  - name: admin
-    protocol: TCP
-    port: 5986
-```
-
-```bash
-kubectl create -f couchdb-service-balanced.yaml
-```
-
-Create the petset for CouchDB.
-*Name's don't matter here but make sure things match with the other specs you're creating*
-
-```yaml
-# couchdb-petset.yaml
-apiVersion: apps/v1alpha1
-kind: PetSet
-metadata:
-  name: couchdb
-spec:
-  serviceName: couchdb
-  replicas: 3
-  template:
-    metadata:
-      labels:
-        app: couchdb
-      annotations:
-        pod.alpha.kubernetes.io/initialized: 'true'
-    spec:
-      terminationGracePeriodSeconds: 30
-      containers:
-      - name: couchdb
-        image: callforamerica/couchdb-app:latest
-        ports:
-        - name: data
-          protocol: TCP
-          containerPort: 5984
-        - name: admin
-          protocol: TCP
-          containerPort: 5986
-        env:
-        - name: COUCHDB_ADMIN_USER
-          valueFrom:
-            secretKeyRef:
-              name: couchdb-creds
-              key: couchdb.user
-        - name: COUCHDB_ADMIN_PASS
-          valueFrom:
-            secretKeyRef:
-              name: couchdb-creds
-              key: couchdb.pass
-        - name: ERLANG_COOKIE
-          valueFrom:
-            secretKeyRef:
-              name: erlang-cookie
-              key: erlang.cookie
-        - name: ERLANG_THREADS
-          valueFrom:
-            configMapKeyRef:
-              name: couchdb-config
-              key: erlang.threads
-        - name: COUCHDB_LOG_LEVEL
-          valueFrom:
-            configMapKeyRef:
-              name: couchdb-config
-              key: couchdb.log-level
-        - name: COUCHDB_REQUIRE_VALID_USER
-          valueFrom:
-            configMapKeyRef:
-              name: couchdb-config
-              key: couchdb.require-valid-user
-        - name: COUCHDB_SHARDS
-          valueFrom:
-            configMapKeyRef:
-              name: couchdb-config
-              key: couchdb.shards
-        - name: COUCHDB_REPLICAS
-          valueFrom:
-            configMapKeyRef:
-              name: couchdb-config
-              key: couchdb.replicas
-        - name: COUCHDB_READ_QUORUM
-          valueFrom:
-            configMapKeyRef:
-              name: couchdb-config
-              key: couchdb.read-quorum
-        - name: COUCHDB_WRITE_QUORUM
-          valueFrom:
-            configMapKeyRef:
-              name: couchdb-config
-              key: couchdb.write-quorum
-        resources:
-          requests:
-            cpu: 2
-            memory: 2Gi
-          limits:
-            cpu: 2
-            memory: 2Gi
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 5984
-          initialDelaySeconds: 10
-          timeoutSeconds: 3
-          successThreshold: 1
-          failureThreshold: 5
-        livenessProbe:
-          httpGet:
-            path: /_up
-            port: 5984
-          initialDelaySeconds: 15
-          timeoutSeconds: 3
-          successThreshold: 1
-          failureThreshold: 5
-        volumeMounts:
-        - name: couchdb-data
-          mountPath: /volumes/couchdb/data
-        imagePullPolicy: IfNotPresent
-      - name: couchdb-discover
-        image: callforamerica/couchdb-discover:latest
-        env:
-        - name: LOG_LEVEL
-          valueFrom:
-            configMapKeyRef:
-              name: couchdb-config
-              key: couchdiscover.log-level
-        imagePullPolicy: IfNotPresent
-      restartPolicy: Always
-  volumeClaimTemplates:
-  - metadata:
-      name: couchdb-data
-      annotations:
-        volume.alpha.kubernetes.io/storage-class: anything
-    spec:
-      accessModes:
-      - ReadWriteOnce
-      resources:
-        requests:
-          storage: 8Gi
-```
-
-Create the petset in kubernetes
-
-```bash
-kubectl create -f couchdb-petset.yaml
-```
-
-### IMPORTANT NOTES:
-
-* If you do not have dynamic volume provisioning setup or enabled in your kubernetes cluster, you will need to comment or modify the `volumeClaimTemplates` and `volumeMounts` keys from the above yaml.  Setting up Dynamic Volume Provisioning it **way** outside the scope of this README.  
-
-* You will need to make sure the annotation value for `storage-class` in `volumeClaimTemplates` matches the configured storage-class in your cluster.
-
-* Adjust the above `resource` `requests` and `limits` to your needs.
-
-* Adjust the `readinessProbe` and `livenessProbe` settings to your needs.
-
-* Expected cluster size will be retrieved from `spec.replicas` in the petset above.  This value will be used to trigger the cluster finish action of the cluster_setup endpoint. 
-
-* To override the expected cluster size, add an additional environment variable to the **`couchdb`** container (not couchdiscover) named: `COUCHDB_CLUSTER_SIZE` with the value of the expected size of your cluster.  It should be rare that this is necessary though.  Keep in mind that by doing this your cluster will not be ready to store or retrieve information until you reach the number of nodes specified in `COUCHDB_CLUSTER_SIZE`.  Until that point you will see continuous errors in your CouchDB logs complaining about missing databases.
-
-
-## Environment variables used by couchdiscover:
+Run environment variables are used in the entrypoint script to render configuration templates, perform flow control, etc.  These values can be overridden when inheriting from the base dockerfile, specified during `docker run`, or in kubernetes manifests in the `env` array.
 
 ### `couchdb` container:
-* `COUCHDB_ADMIN_USER`: username to use when enabling the node, required.
-* `COUCHDB_ADMIN_PASS`: password to use when enabling the node, required.
-* `ERLANG_COOKIE`: cookie value to use as the `.erlang.cookie`, not required, fails back to insecure cookie value when not set.
-* `COUCHDB_CLUSTER_SIZE`: not required, overrides the value of `spec.replicas` in the petset, should rarely be necessary to set. Don't set unless you know what you're doing.
+
+* `ERLANG_THREADS`: used as the value for the `+A` argument in `vm.args`.  Defaults to `25`.
+* `COUCHDB_LOG_LEVEL`: lowercased and used as the value for the level in the `log` section of `local.ini`.  Defaults to `info`.
+* `COUCHDB_DATA_PATH`: used as the value for 'database_dir` and `view_index_dir` in the `couchdb` section of `local.ini`.  Defaults to `/data/$APP`.
+* `COUCHDB_BIND_ADDR`: used as the value for `bind_address` in the `chttpd` and `httpd` sections of `local.ini`.  Defaults to ``.
+* `COUCHDB_REQUIRE_VALID_USER`: used as the value for `require_valid_user` in the `chttpd` and `httpd` sections of `local.ini`.  Defaults to `false`.
+* `COUCHDB_SHARDS`: used as the value for `q` in the `cluster` section of `local.ini`.  Defaults to `4`.
+* `COUCHDB_READ_QUORUM`: used as the value for `r` in the `cluster` section of `local.ini`.  Defaults to `1`.
+* `COUCHDB_WRITE_QUORUM`: used as the value for `w` in the `cluster` section of `local.ini`.  Defaults to `1`.
+* `COUCHDB_REPLICAS`: used as the value for `n` in the `cluster` section of `local.ini`.  Defaults to `1`.
+* `LOCAL_DEV_CLUSTER`: when value is `true`, will trigger the couch-helper in the entrypoint script before starting couchdb.  Inject as true into the environment when running a simple single node dev cluster that should immediately auto-initialize.  Defaults to `false`.
+* `COUCHDB_ADMIN_USER`,`COUCHDB_ADMIN_PASS`: when set this will be available to the sidecar container `couchdiscover` and the script `couch-helper`. Your cluster will be auto initialized using these credentials. `couch-helper` is meant to be used for local single node clusters for development.
+* `ERLANG_COOKIE`: when set this value will be written to ~/.erlang.cookie and proper permissions applied prior to starting couchdb.
+* `COUCHDB_CLUSTER_SIZE`: when set this value override the value of the replica's field on the kubernetes statefulset manifest. Do not use unless you really need to override the default behavior for some reason.
 
 ### `couchdiscover` container:
 * `LOG_LEVEL`: logging level to output container logs for.  Defaults to `INFO`, most logs are either INFO or WARNING level.
 
+## Usage
 
-## How information is discovered
+### Under docker (manual-build)
 
-In order to best use something that is essentially "zero configuration," it helps to understand how the necessary information is obtained from the environment and api's. 
+If building and running locally, feel free to use the convenience targets in the included `Makefile`.
 
-1. Initially a great deal of information is obtained by grabbing the hostname of the container that's part of a petset and parsing it.  This is how the namespace is determined, how hostnames are calculated later, the name of the petset to look for in the api, the name of the headless service, the node name, the index, whether a node is master or not, etc.
+* `make build`: rebuilds the docker image.
+* `make launch`: launch for testing.
+* `make logs`: tail the logs of the container.
+* `make shell`: exec's into the docker container interactively with tty and bash shell.
+* `make test`: test's the launched container.
+* *and many others...*
 
-2. The kubernetes api is used to grab the petset and entrypoint objects. The entrypoint object is parsed to obtain the `hosts` list.  Then the petset is parsed for the ports, then the environment is resolved, fetching any externally referenced configmaps or secrets that are necessary.  Credentials are resolved by looking through the environment for the keys: `COUCHDB_ADMIN_USER`, `COUCHDB_ADMIN_PASS`.  Finally the expected cluster size is set to the number of replicas in the fetched petset.  You can override this as detailed in the above notes section, but should be completely unnecessary for most cases.
+
+### Under docker (pre-built)
+
+All of our docker-* repos in github have CI pipelines that push to docker cloud/hub.  
+
+This image is available at:
+* [https://store.docker.com/community/images/callforamerica/couchdb](https://store.docker.com/community/images/callforamerica/couchdb)
+*  [https://hub.docker.com/r/callforamerica/couchdb](https://hub.docker.com/r/callforamerica/couchdb).
+
+and through docker itself: `docker pull callforamerica/couchdb`
+
+To run:
+
+```bash
+docker run -d \
+    --name couchdb \
+    -h couchdb.local \
+    callforamerica/couchdb
+```
+
+**NOTE:** Please reference the Run Environment section for the list of available environment variables.
 
 
-## Main logic
+### Under Kubernetes
+
+Edit the manifests under `kubernetes/` to reflect your specific environment and configuration.
+
+Create a secret for the erlang cookie:
+```bash
+kubectl create secret generic erlang-cookie --from-literal=erlang.cookie=$(LC_ALL=C tr -cd '[:alnum:]' < /dev/urandom | head -c 64)
+```
+
+Create a secret for the couchdb credentials:
+```bash
+kubectl create secret generic couchdb-creds --from-literal=couchdb.user=$(sed $(perl -e "print int rand(99999)")"q;d" /usr/share/dict/words) --from-literal=couchdb.pass=$(LC_ALL=C tr -cd '[:alnum:]' < /dev/urandom | head -c 32)
+```
+
+Deploy couchdb:
+```bash
+kubectl create -f kubernetes
+```
+
+## `couchdiscover`
+
+For the kubernetes manifests, there is a sidecar container called couchdiscover that handles initializing the cluster.
+
+In order to best use something that is essentially "zero configuration," it helps to understand how the necessary information is obtained from the environment and api's.
+
+### How `couchdiscover` discovers information
+
+1. Initially a great deal of information is obtained by grabbing the hostname of the container that's part of a StatefulSet and parsing it.  This is how the namespace is determined, how hostnames are calculated later, the name of the StatefulSet to look for in the api, the name of the headless service, the node name, the index, whether a node is master or not, etc.
+
+2. The kubernetes api is used to grab the StatefulSet and Endpoint objects. The Endpoint object is parsed to obtain the `hosts` list.  Then the StatefulSet is parsed for the ports, then the environment is resolved, fetching any externally referenced ConfigMaps or Secrets that are necessary.  Credentials are resolved by looking through the environment of the `couchdb` container for the keys: `COUCHDB_ADMIN_USER`, `COUCHDB_ADMIN_PASS`.  Finally the expected cluster size is set to the number of replicas in the fetched StatefulSet.  You can override this by setting this environment variable manually, but should be completely unnecessary for most cases.
+
+### Main logic
 
 The main logic is performed in the `manage` module's `ClusterManager` object's `run` method.  I think most of it is relatively straighforward.
 
@@ -355,35 +147,7 @@ def run(self):
     self.sleep_forever()
 ```
 
-## Environments
-
-### Build
-
-### Run
-
-
-## Instructions
-
-### Docker
-
-[todo]
-
-### Kubernetes
-
-* Create the necessary secrets listed in `couchdb-petset.yaml`
-* Create the PersistentVolumes in `couchdb-pvs.yaml`
-* Create the PersistentVolumeClaims in `couchdb-pvcs.yaml`
-* Create the Service in `couchdb-service.yaml`
-* Create the petset in `couchdb-service.yaml`
-
 
 ## Issues
 
-### Docker.hub automated builds don't tolerate COPY or ADD to root /
-
-I've added a comment to the Dockerfile noting this and for now am copying to
-/tmp and then copying to / in the next statement.
-
-ref: https://forums.docker.com/t/automated-docker-build-fails/22831/28
-
-## Todos
+**ref:**  [https://github.com/sip-li/docker-couchdb/issues](https://github.com/sip-li/docker-couchdb/issues)
