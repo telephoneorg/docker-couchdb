@@ -35,4 +35,3 @@ script:
 - make hub-login
 - make hub-push
 - make hub-build
-
