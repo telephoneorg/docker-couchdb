@@ -20,9 +20,9 @@ PORT_ARGS = -p "5984:5984" -p "5986:5986"
 
 -include ../Makefile.inc
 
-.PHONY: all build rebuild tag info test run launch shell launch-as-dep
-.PHONY: rmf-as-dep logs start kill stop rm rmi rmf hub-login hub-push hub-build
-.PHONY: kube-local kube-local-rm kube-deploy kube-rm
+.PHONY: all build rebuild tag info test create-network run launch shell
+.PHONY: launch-as-dep rmf-as-dep logs start kill stop rm rmi rmf hub-login
+.PHONY: hub-push hub-build kube-local kube-local-rm kube-deploy kube-rm
 
 build:
 	@docker build -t $(DOCKER_IMAGE) --force-rm .
@@ -46,13 +46,17 @@ info:
 test:
 	@tests/run
 
+create-network:
+	@-docker network ls | awk '{print $2}' | grep -q local || docker network \
+		create local
+
 run:
 	@docker run -it --rm --name $(NAME).local \
-		$(ENV_ARGS) $(DOCKER_IMAGE) $(CSHELL)
+		$(ENV_ARGS) --network local $(DOCKER_IMAGE) $(CSHELL)
 
 launch:
 	@docker run -d --name $(NAME) -h $(NAME).local \
-		$(ENV_ARGS) $(VOLUME_ARGS) $(PORT_ARGS) $(DOCKER_IMAGE)
+		$(ENV_ARGS) $(VOLUME_ARGS) $(PORT_ARGS) --network local $(DOCKER_IMAGE)
 
 shell:
 	@docker exec -ti $(NAME) $(CSHELL)
