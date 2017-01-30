@@ -17,6 +17,7 @@ CSHELL = bash -l
 ENV_ARGS = --env-file default.env
 PORT_ARGS = -p "5984:5984" -p "5986:5986"
 # VOLUME_ARGS = --tmpfs /volumes/$(NAME)/data:size=512M
+NETWORK_ARGS = --network local
 
 -include ../Makefile.inc
 
@@ -47,16 +48,15 @@ test:
 	@tests/run
 
 create-network:
-	@-docker network ls | awk '{print $2}' | grep -q local || docker network \
-		create local
+	@-docker network create local
 
 run:
 	@docker run -it --rm --name $(NAME).local \
-		$(ENV_ARGS) --network local $(DOCKER_IMAGE) $(CSHELL)
+		$(ENV_ARGS) $(NETWORK_ARGS) $(DOCKER_IMAGE) $(CSHELL)
 
 launch:
 	@docker run -d --name $(NAME) -h $(NAME).local \
-		$(ENV_ARGS) $(VOLUME_ARGS) $(PORT_ARGS) --network local $(DOCKER_IMAGE)
+		$(ENV_ARGS) $(VOLUME_ARGS) $(PORT_ARGS) $(NETWORK_ARGS) $(DOCKER_IMAGE)
 
 shell:
 	@docker exec -ti $(NAME) $(CSHELL)

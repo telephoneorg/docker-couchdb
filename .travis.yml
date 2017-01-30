@@ -22,13 +22,14 @@ before_install:
 - source scripts/ci-env.sh
 - make info
 
-install:
-- make build
-- make launch
+install: make build
 
-script:
+before_script:
+- make create-network
+- make launch
 - sleep 10
-- make test
+
+script: make test
 
 after_success:
 - make tag ALT_TAG=${TRAVIS_COMMIT::6}
