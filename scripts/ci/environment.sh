@@ -25,12 +25,12 @@ function get-tag {
     fi
 }
 
-function get-docker-user {
+function get-user {
     printf ${DOCKER_USER:=callforamerica}
 }
 
 function get-docker-image {
-    local user=$(get-docker-user)
+    local user=$(get-user)
     local name=$(get-name)
     local tag=$(get-tag)
     printf "$user/$name:$tag"
@@ -46,7 +46,7 @@ function tag {
     local name=$(get-name)
     local user=$(get-user)
     local image=$(get-docker-image)
-    docker tag $image $user/$name:$alt_tag
+    docker tag $image $user/$name:$new_tag
 }
 
 function hub-push {
@@ -62,12 +62,12 @@ function hub-push {
 
 function hub-trigger {
     if [[ -z $BUILD_TOKEN ]]; then
-        printf 'BUILD_TOKEN not set.'
+        printf 'BUILD_TOKEN not set.\n'
         return 1
     fi
     local name=$(get-name)
     local tag=$(get-tag)
-    local user=$(get-docker-user)
+    local user=$(get-user)
     curl -s -X POST -H "Content-Type: application/json" \
     	--data '{"docker_tag": "$tag"}' \
     	https://registry.hub.docker.com/u/$user/$name/trigger/$BUILD_TOKEN/
@@ -95,16 +95,14 @@ function ci-tag-build {
     tag travis-$TRAVIS_BUILD_NUMBER
 }
 
-base=$(dirname $0)
-
-if [[ -f $base/vars.env ]]; then
-    source $base/vars.env
+if [[ -f scripts/ci/vars.env ]]; then
+    source scripts/ci/vars.env
 fi
 
 export NAME=$(get-name)
 export BRANCH=$(get-branch)
 export TAG=$(get-tag)
-export DOCKER_USER=$(get-docker-user)
+export DOCKER_USER=$(get-user)
 export DOCKER_IMAGE=$(get-docker-image)
 
 echo -e "
