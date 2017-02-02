@@ -75,7 +75,7 @@ EOF
 
 
 log::m-info "Ensuring correct permissions ..."
-chown -R $USER:$USER ~ /{volumes,data}/$APP /volumes/$APP/{data,dumps}
+chown -R $USER:$USER ~/etc /volumes/$APP/{data,dumps}
 
 
 log::m-info "Starting $APP ..."
