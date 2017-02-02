@@ -1,7 +1,4 @@
-addons:
-  apt:
-    packages:
-    - zsh
+language: python
 services: docker
 env:
   global:
@@ -19,21 +16,18 @@ notifications:
     on_failure: always
 
 before_install:
-- source scripts/ci-env.sh
-- make info
+- pip install --upgrade docker-compose
+- source scripts/ci/environment.sh
 
-install: make build
+install: docker-compose build
 
 before_script:
-- make create-network
-- make launch
+- docker-compose up -d
 - sleep 10
 
-script: make test
+script: tests/run
 
 after_success:
-- make tag ALT_TAG=${TRAVIS_COMMIT::6}
-- make tag ALT_TAG=travis-$TRAVIS_BUILD_NUMBER
-- make hub-login
-- make hub-push
-- make hub-build
+- ci-tag-build
+- hub-push
+- hub-trigger

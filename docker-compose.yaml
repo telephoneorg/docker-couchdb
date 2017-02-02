@@ -1,0 +1,21 @@
+version: '2.1'
+services:
+  couchdb:
+    container_name: couchdb
+    hostname: couchdb.local
+    build: .
+    image: callforamerica/couchdb:${TAG:-latest}
+    env_file: default.env
+    ports:
+    - "5984:5984"
+    - "5986:5986"
+    volumes:
+    - data-couchdb:/volumes/couchdb/data
+    networks:
+      local:
+        aliases:
+        - couchdb.local
+volumes:
+  data-couchdb:
+networks:
+  local:

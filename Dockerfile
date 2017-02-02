@@ -34,5 +34,9 @@ VOLUME  ["/volumes/couchdb/data"]
 
 WORKDIR $HOME
 
+SHELL       ["/bin/bash"]
+HEALTHCHECK --interval=15s --timeout=5s \
+    CMD curl -f -s http://localhost:5984/_users || exit 1
+
 ENTRYPOINT  ["/dumb-init", "--"]
 CMD         ["/entrypoint"]
