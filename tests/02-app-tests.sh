@@ -24,7 +24,7 @@ fi
 
 for db in _global_changes _metadata _replicator _users; do
     echo::test "couchdb database: $db exists"
-    docker exec $NAME bash -l -c "curl -s http://localhost:5984/$db | jq -r '.db_name' | grep $db"
+    docker exec $NAME bash -l -c "curl -s -u admin:secret http://localhost:5984/$db | jq -r '.db_name' | grep $db"
     if (($? == 0)); then
         echo::success "ok"
     else
@@ -35,7 +35,7 @@ done
 
 for db in _dbs _nodes _replicator _users; do
     echo::test "couchdb database: $db exists"
-    docker exec $NAME bash -l -c "curl -s http://localhost:5986/$db | jq -r '.db_name' | grep $db"
+    docker exec $NAME bash -l -c "curl -s -u admin:secret http://localhost:5986/$db | jq -r '.db_name' | grep $db"
     if (($? == 0)); then
         echo::success "ok"
     else
@@ -54,7 +54,7 @@ else
 fi
 
 echo::test "couchdb 'demo' db does not exist"
-docker exec $NAME bash -l -c 'curl -s http://localhost:5984/demo | jq -r ".reason" | grep -q "Database does not exist."'
+docker exec $NAME bash -l -c 'curl -s -u admin:secret http://localhost:5984/demo | jq -r ".reason" | grep -q "Database does not exist."'
 if (($? == 0)); then
     echo::success "ok"
 else
@@ -63,7 +63,7 @@ else
 fi
 
 echo::test "couchdb 'demo' db was successfully created"
-docker exec $NAME bash -l -c 'curl -s -X PUT http://localhost:5984/demo | jq -r ".ok" | grep -q true'
+docker exec $NAME bash -l -c 'curl -s -u admin:secret -X PUT http://localhost:5984/demo | jq -r ".ok" | grep -q true'
 if (($? == 0)); then
     echo::success "ok"
 else
@@ -72,7 +72,7 @@ else
 fi
 
 echo::test "couchdb 'demo' db was successfully exists"
-docker exec $NAME bash -l -c 'curl -s http://localhost:5984/demo | jq -r ".db_name" | grep -q demo'
+docker exec $NAME bash -l -c 'curl -s -u admin:secret http://localhost:5984/demo | jq -r ".db_name" | grep -q demo'
 if (($? == 0)); then
     echo::success "ok"
 else
@@ -81,7 +81,7 @@ else
 fi
 
 echo::test "couchdb 'demo' db document 'test' does not exist"
-docker exec $NAME bash -l -c 'curl -s http://localhost:5984/demo/test | jq -r ".error" | grep -q not_found'
+docker exec $NAME bash -l -c 'curl -s -u admin:secret http://localhost:5984/demo/test | jq -r ".error" | grep -q not_found'
 if (($? == 0)); then
     echo::success "ok"
 else
@@ -90,7 +90,7 @@ else
 fi
 
 echo::test "couchdb 'demo' db document 'test' was successfully created"
-docker exec $NAME bash -l -c 'curl -s -X POST -H "Content-Type: application/json" --data "{\"_id\": \"test\", \"test\": true}" http://localhost:5984/demo | jq -r ".ok" | grep -q true'
+docker exec $NAME bash -l -c 'curl -s -u admin:secret -X POST -H "Content-Type: application/json" --data "{\"_id\": \"test\", \"test\": true}" http://localhost:5984/demo | jq -r ".ok" | grep -q true'
 if (($? == 0)); then
     echo::success "ok"
 else
@@ -99,7 +99,7 @@ else
 fi
 
 echo::test "couchdb 'demo' db document 'test' has test: true"
-docker exec $NAME bash -l -c 'curl -s http://localhost:5984/demo/test | jq -r ".test" | grep -q true'
+docker exec $NAME bash -l -c 'curl -s -u admin:secret http://localhost:5984/demo/test | jq -r ".test" | grep -q true'
 if (($? == 0)); then
     echo::success "ok"
 else
