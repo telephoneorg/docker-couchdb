@@ -30,4 +30,3 @@ script: tests/run
 after_success:
 - ci-tag-build
 - hub-push
-- hub-trigger

@@ -25,8 +25,6 @@ COPY    entrypoint /
 
 ENV     ERL_MAX_PORTS 65536
 ENV     COUCHDB_LOG_LEVEL info
-# ENV     COUCHDB_
-# ENV     COUCHDB_
 
 EXPOSE  5984 5986
 

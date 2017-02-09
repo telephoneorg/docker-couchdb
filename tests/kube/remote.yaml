@@ -67,7 +67,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: couchdb-bal
+  name: couchdb-lb
   labels:
     app: couchdb
     test: 'true'

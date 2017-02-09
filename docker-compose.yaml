@@ -9,13 +9,9 @@ services:
     ports:
     - "5984:5984"
     - "5986:5986"
-    volumes:
-    - data-couchdb:/volumes/couchdb/data
     networks:
       local:
         aliases:
         - couchdb.local
-volumes:
-  data-couchdb:
 networks:
   local:
