@@ -7,6 +7,7 @@ metadata:
     project: valuphone
     environment: production
 data:
+  kube.use-long-hostname: 'true'
   erlang.threads: '25'
   couchdb.log.level: info
   couchdb.require-valid-user: 'false'

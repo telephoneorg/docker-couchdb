@@ -21,6 +21,11 @@ spec:
       - name: couchdb
         image: callforamerica/couchdb
         env:
+        - name: USE_LONG_HOSTNAME
+          valueFrom:
+            configMapKeyRef:
+              name: couchdb
+              key: kube.use-long-hostname
         - name: COUCHDB_ADMIN_USER
           valueFrom:
             secretKeyRef:

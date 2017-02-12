@@ -35,6 +35,7 @@ metadata:
     test: 'true'
     environment: testing
 data:
+  kube.use-long-hostname: 'true'
   erlang.threads: '25'
   couchdb.log.level: info
   couchdb.require-valid-user: 'false'
@@ -105,6 +106,11 @@ spec:
         image: callforamerica/couchdb:latest
         imagePullPolicy: IfNotPresent
         env:
+        - name: USE_LONG_HOSTNAME
+          valueFrom:
+            configMapKeyRef:
+              name: couchdb
+              key: kube.use-long-hostname
         - name: COUCHDB_ADMIN_USER
           valueFrom:
             secretKeyRef:
