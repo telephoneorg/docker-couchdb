@@ -5,7 +5,12 @@ services:
     hostname: couchdb.local
     build: .
     image: callforamerica/couchdb:${TAG:-latest}
-    env_file: default.env
+    # env_file: default.env
+    environment:
+      LOCAL_DEV_CLUSTER: 'true'
+      COUCHDB_ADMIN_USER: admin
+      COUCHDB_ADMIN_PASS: secret
+      ERLANG_COOKIE: test-cookie
     ports:
     - "5984:5984"
     - "5986:5986"
