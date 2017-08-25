@@ -42,7 +42,7 @@ file:
     - -kernel inet_dist_listen_min 11500 inet_dist_listen_max 11999
   /usr/local/bin/couchdb-helper:
     exists: true
-    mode: "0755"
+    # mode: "0775"
     size:
       gt: 1900
     owner: root
