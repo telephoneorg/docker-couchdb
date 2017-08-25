@@ -1,0 +1,171 @@
+file:
+  /goss/docker_output.log:
+    exists: true
+    contains:
+    - Apache CouchDB has started. Time to relax.
+  /opt/couchdb/bin/couchdb:
+    exists: true
+    mode: "0755"
+    size: 1061
+    owner: couchdb
+    group: couchdb
+    filetype: file
+  /opt/couchdb/etc/default.ini:
+    exists: true
+    mode: "0644"
+    owner: couchdb
+    group: couchdb
+    filetype: file
+  /opt/couchdb/etc/local.ini:
+    exists: true
+    mode: "0644"
+    owner: couchdb
+    group: couchdb
+    filetype: file
+    contains:
+    - bind_address = 0.0.0.0
+    - port = 5984
+    - port = 5986
+    - q=2
+    - n=1
+    - r=1
+    - w=1
+    - level = info
+  /opt/couchdb/etc/vm.args:
+    exists: true
+    mode: "0644"
+    owner: couchdb
+    group: couchdb
+    filetype: file
+    contains:
+    - -sname couchdb
+    - -kernel inet_dist_listen_min 11500 inet_dist_listen_max 11999
+  /usr/local/bin/couchdb-helper:
+    exists: true
+    mode: "0755"
+    size:
+      gt: 1900
+    owner: root
+    group: root
+    filetype: file
+  /volumes/couchdb/data:
+    exists: true
+    mode: "0755"
+    owner: couchdb
+    group: couchdb
+    filetype: directory
+  /volumes/couchdb/dumps:
+    exists: true
+    mode: "0777"
+    owner: couchdb
+    group: couchdb
+    filetype: directory
+package:
+  libicu57:
+    installed: true
+port:
+  tcp:5984:
+    listening: true
+    ip:
+    - 0.0.0.0
+  tcp:5986:
+    listening: true
+    ip:
+    - 0.0.0.0
+user:
+  couchdb:
+    exists: true
+    groups:
+    - couchdb
+    home: /opt/couchdb
+    shell: /bin/false
+group:
+  couchdb:
+    exists: true
+command:
+  curl -X PUT -I http://localhost:5984/demo-db:
+    exit-status: 0
+    stdout:
+    - HTTP/1.1 201 Created
+    - 'X-CouchDB-Body-Time: 0'
+    - '/X-Couch-Request-ID: \w+/'
+    - 'Server: CouchDB/2.'
+    - 'Location: http://localhost:5984/demo-db'
+    - 'Content-Type: application/json'
+    - 'Cache-Control: must-revalidate'
+    timeout: 10000
+  'curl -X PUT http://localhost:5984/demo-db2 && curl --fail -X POST -H "Content-Type: application/json" --data "{\"_id\": \"test-document\"}" http://localhost:5984/demo-db2':
+    exit-status: 0
+    stdout:
+    - '{"ok":true,"id":"test-document","rev":"'
+    timeout: 10000
+process:
+  beam.smp:
+    running: true
+  epmd:
+    running: true
+http:
+  http://localhost:5984:
+    status: 200
+    allow-insecure: false
+    no-follow-redirects: false
+    timeout: 5000
+  http://localhost:5984/_global_changes:
+    status: 200
+    allow-insecure: false
+    no-follow-redirects: false
+    timeout: 5000
+  http://localhost:5984/_metadata:
+    status: 404
+    allow-insecure: false
+    no-follow-redirects: false
+    timeout: 5000
+  http://localhost:5984/_replicator:
+    status: 200
+    allow-insecure: false
+    no-follow-redirects: false
+    timeout: 5000
+  http://localhost:5984/_up:
+    status: 200
+    allow-insecure: false
+    no-follow-redirects: false
+    timeout: 5000
+    body:
+    - '{"status":"ok"}'
+  http://localhost:5984/_users:
+    status: 200
+    allow-insecure: false
+    no-follow-redirects: false
+    timeout: 5000
+  http://localhost:5986:
+    status: 200
+    allow-insecure: false
+    no-follow-redirects: false
+    timeout: 5000
+  http://localhost:5986/_dbs:
+    status: 200
+    allow-insecure: false
+    no-follow-redirects: false
+    timeout: 5000
+  http://localhost:5986/_nodes:
+    status: 200
+    allow-insecure: false
+    no-follow-redirects: false
+    timeout: 5000
+  http://localhost:5986/_replicator:
+    status: 200
+    allow-insecure: false
+    no-follow-redirects: false
+    timeout: 5000
+  # http://localhost:5986/_up:
+  #   status: 400
+  #   allow-insecure: false
+  #   no-follow-redirects: false
+  #   timeout: 5000
+  #   body:
+  #   - '{"status":"ok"}'
+  http://localhost:5986/_users:
+    status: 200
+    allow-insecure: false
+    no-follow-redirects: false
+    timeout: 5000

@@ -12,16 +12,40 @@ set -e
 : readonly ${COUCHDB_BIND_ADDR:=0.0.0.0}
 : readonly ${COUCHDB_REQUIRE_VALID_USER:=false}
 
-: declare -ir ${COUCHDB_SHARDS:=4}
+: readonly ${COUCHDB_PORT:=5984}
+: readonly ${COUCHDB_ADMIN_PORT:=5986}
+
+: declare -ir ${COUCHDB_SHARDS:=2}
 : declare -ir ${COUCHDB_READ_QUORUM:=1}
 : declare -ir ${COUCHDB_WRITE_QUORUM:=1}
-: declare -ir ${COUCHDB_REPLICAS:=1}
+: declare -ir ${COUCHDB_REPLICAS:=1}  # This should be set to 3 on a cluster
 
 : readonly ${LOCAL_DEV_CLUSTER:=false}
+: ${SKIP_AUTO_CONFIG:=false}
 
 
-log::m-info "Writing vm.args file ..."
-tee ~/etc/vm.args <<EOF
+for file in default.ini local.ini vm.args; do
+    if [[ -f /config/$file ]]; then
+        ln -sf /config/$file ~/etc/$file
+        SKIP_AUTO_CONFIG=true
+    fi
+done
+
+for dir in local.d default.d; do
+    if [[ -d /config/$dir ]]; then
+        ln -sf /config/$dir ~/etc/$dir
+        SKIP_AUTO_CONFIG=true
+    fi
+done
+
+if [[ -f /config/.erlang.cookie ]]; then
+    ln -sf /config/.erlang.cookie ~/.erlang.cookie
+fi
+
+
+if [[ ! $SKIP_AUTO_CONFIG == true ]]; then
+    log::m-info "Writing vm.args file ..."
+    tee ~/etc/vm.args <<EOF
 # Turn off the sasl error logger
 -sasl sasl_error_logger false
 
@@ -45,21 +69,20 @@ $(erlang::vmargs::get-name couchdb)
 +Bd -noinput
 EOF
 
-
-log::m-info "Rewriting local.ini file ..."
-tee ~/etc/local.ini <<EOF
+    log::m-info "Rewriting local.ini file ..."
+    tee ~/etc/local.ini <<-EOF
 [couchdb]
 database_dir = $COUCHDB_DATA_PATH
 view_index_dir = $COUCHDB_DATA_PATH
 
 [chttpd]
 require_valid_user = $COUCHDB_REQUIRE_VALID_USER
-port = 5984
+port = $COUCHDB_PORT
 bind_address = $COUCHDB_BIND_ADDR
 
 [httpd]
 require_valid_user = $COUCHDB_REQUIRE_VALID_USER
-port = 5986
+port = $COUCHDB_ADMIN_PORT
 bind_address = $COUCHDB_BIND_ADDR
 
 [cluster]
@@ -68,10 +91,13 @@ n=$COUCHDB_REPLICAS
 r=$COUCHDB_READ_QUORUM
 w=$COUCHDB_WRITE_QUORUM
 
+[couch_httpd_auth]
+iterations = 1000
+
 [log]
 level = ${COUCHDB_LOG_LEVEL,,}
-
 EOF
+fi
 
 
 log::m-info "Ensuring correct permissions ..."
@@ -82,4 +108,4 @@ log::m-info "Starting $APP ..."
 cd ~
     # for local dev clusters.  see: /usr/local/bin/couchdb-helper
     [[ $LOCAL_DEV_CLUSTER == true ]] && gosu $USER couchdb-helper &
-    exec gosu $USER couchdb 2>&1
+    exec gosu $USER couchdb

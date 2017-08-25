@@ -12,8 +12,11 @@ Minimal image with a sidecar container that performs automatic cluster initializ
 
 ## Build Environment
 Build environment variables are often used in the build script to bump version numbers and set other options during the docker build phase.  Their values can be overridden using a build argument of the same name.
-* `ERLANG_VERSION`
-* `COUCHDB_VERSION`
+* `ERLANG_VERSION`: the version of erlang to install. Defaults to `19.2`.
+* `COUCHDB_VERSION`: the version of couchdb to install. Defaults to `2.0.0`.
+* `COUCHDB_RC`: the release candidate number (if applicable). No default.
+* `COUCHDB_CHECK_RELEASE`: Determines whether `make check` will run before `make release`, boolean. Defaults to `false`.
+
 
 The following variables are standard in most of our dockerfiles to reduce duplication and make scripts reusable among different projects:
 * `APP`: couchdb
@@ -145,4 +148,24 @@ def run(self):
         else:
             log.info("Looks like I'm not the last node")
     self.sleep_forever()
+```
+
+## Building and testing release candidates
+**Note:** Check the Build Environment Section at the top for a summary of the build arguments used here.  The command given is just an example, change it as necessary.
+
+### Build only
+```bash
+docker-compose build \
+    --force-rm \
+    --build-arg COUCHDB_VERSION=2.1.0 \
+    --build-arg COUCHDB_RC=1
+```
+
+### Build with `make check`
+```bash
+docker-compose build \
+    --force-rm \
+    --build-arg COUCHDB_VERSION=2.1.0 \
+    --build-arg COUCHDB_RC=1 \
+    --build-arg COUCHDB_CHECK_RELEASE=true
 ```

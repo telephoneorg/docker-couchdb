@@ -3,9 +3,12 @@ services:
   couchdb:
     container_name: couchdb
     hostname: couchdb.local
-    build: .
-    image: callforamerica/couchdb:${TAG:-latest}
-    # env_file: default.env
+    build:
+      context: .
+      args:
+        ERLANG_VERSION: 19.2
+        COUCHDB_VERSION: 2.1.0
+    image: ${DOCKER_ORG:-joeblackwaslike}/couchdb:${TAG:-latest}
     environment:
       LOCAL_DEV_CLUSTER: 'true'
       COUCHDB_ADMIN_USER: admin

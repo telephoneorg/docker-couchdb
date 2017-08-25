@@ -1,8 +1,17 @@
+addons:
+  apt:
+    packages:
+    - realpath
 language: python
+python:
+- "3.6"
 services: docker
 env:
   global:
-  - DOCKER_USER=callforamerica
+  - GITHUB_USER=joeblackwaslike
+  - GITHUB_ORG=joeblackwaslike
+  - DOCKER_USER=joeblackwaslike
+  - DOCKER_ORG=joeblackwaslike
   # DOCKER_PASS
   - secure: "AGq8kaZhYgpkzPxqVXcPSuKZLAf6ucBj4OtJmS594Zb1oGWTIbe7NaVZGh0kb7tW47HhHHPU+y/7cKKLhayT8l0TWjpoTKw+ttxgvJcvk2E8IkGzJWeiSHolx+v6fwWs5wxl7MSpNBX56Aqz1Lp++lpkcUt4VqAei3E2rvUTsyAORdElMToR6sW9lJvzCWza3E0Htim2U26sW6M+zqKGIGn6HpVAMzEUvPh4OaqiigZjl5NMHbY5XMHdsyGEW8izfneuTExKwxrPX4UwF2ASZZyi8PXaRnuG+CC6b9tALBqu3T34al16JaaCJGxOHfFSd92nqFPsFt16hKbgFOdzTSNjXg6d4FgBYPb+LLnfZa0UuDEpKAVoeh53ktFSS1wtJ18QOAGZfIdjMir0rQR4Xb2XQQXNivBlP2O8em0tolnpNsFLb/WeSw0kXoijCUDdwZeOTPQZcdv5cMBvpLMEqnSm5jZP8gKs2b3ED2HTgoPB52aPmjpANp6dNT3YL0p4hlr5JytG358lhfuzqMlsv088JYQ6sx782D9Ie4orpBPIBJZT88B/C4fozeyPbEqiWywL9asFHVxuDaJlPccEHa+omN3bngBg+WY61xqAutdbM6h+d4vJtn5l7nIbXjgZEzT/yZKhpCBa/nuA+d9S31OoQFJLt4+vvdeimeCXQUY="
 notifications:
@@ -25,7 +34,7 @@ before_script:
 - docker-compose up -d
 - sleep 10
 
-script: tests/run
+script: inv tests
 
 after_success:
 - ci-tag-build

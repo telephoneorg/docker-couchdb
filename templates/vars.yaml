@@ -1,0 +1,11 @@
+name: docker-couchdb
+heading:
+description:
+github:
+  user: joeblackwaslike
+  org: joeblackwaslike
+  repo: docker-couchdb
+docker:
+  user: joeblackwaslike
+  org: joeblackwaslike
+  repo: couchdb

@@ -2,44 +2,69 @@
 
 set -e
 
+: readonly ${COUCHDB_CHECK_RELEASE:=false}
+
+if [ ! -z $COUCHDB_RC ]; then
+    COUCHDB_DOWNLOAD_URL=https://dist.apache.org/repos/dist/dev/couchdb/source/${COUCHDB_VERSION}/rc.${COUCHDB_RC}/apache-couchdb-${COUCHDB_VERSION}-RC${COUCHDB_RC}.tar.gz
+else
+    COUCHDB_DOWNLOAD_URL=https://dist.apache.org/repos/dist/release/couchdb/source/${COUCHDB_VERSION}/apache-couchdb-${COUCHDB_VERSION}.tar.gz
+fi
+
+
 # Use local cache proxy if it can be reached, else nothing.
 eval $(detect-proxy enable)
 
 build::user::create $USER
 
-log::m-info "Installing erlang repo ..."
-build::apt::add-key 434975BD900CCBE4F7EE1B1ED208507CA14F4FCA
-echo 'deb http://packages.erlang-solutions.com/debian jessie contrib' > \
-    /etc/apt/sources.list.d/erlang.list
-apt-get -q update
 
+# log::m-info "Installing erlang repo ..."
+# echo 'deb http://ftp.debian.org/debian jessie-backports main' > \
+#     /etc/apt/sources.list.d/jessie-backports.list
+# echo 'APT::Default-Release "stretch";' > /etc/apt/apt.conf.d/99-default-release
 
-log::m-info "Installing essentials ..."
-apt-get install -qq -y curl
-
-
-log::m-info "Installing $APP ..."
-apt_erlang_vsn=$(build::apt::get-version erlang)
-
-log::m-info "apt versions: erlang: $apt_erlang_vsn"
-apt-get install -qq -y \
-    erlang=$apt_erlang_vsn \
-    build-essential \
-    libcurl4-openssl-dev \
-    libicu-dev \
-    libmozjs185-dev \
+log::m-info "Installing dependencies ..."
+apt_packages=(
+    build-essential
+    ca-certificates
+    erlang
+    libcurl4-openssl-dev
+    libicu-dev
+    libmozjs185-dev
     pkg-config
+)
+
+apt-get update -qq
+apt-get install -qqy ${apt_packages[@]} curl
 
 
-log::m-info "Downloading $APP ..."
+# apt_erl_vsn=$(build::apt::get-version erlang)
+# log::m-info "Installing erlang $apt_erl_vsn ..."
+# apt-get -t jessie-backports install -yqq erlang=$apt_erl_vsn
+
+
+# Add the following keys
+gpg --recv-key 118F1A7C 43ECCEE1 DF3CEBA3 04F4EE9B 30380381 7852AEE4
+
+
+log::m-info "Installing $APP $COUCHDB_VERSION $COUCHDB_RC ..."
 mkdir -p /tmp/couchdb
 pushd $_
-    curl -sSL \
-        http://apache.mesi.com.ar/couchdb/source/${COUCHDB_VERSION}/apache-couchdb-${COUCHDB_VERSION}.tar.gz \
-            | tar xzf - --strip-components=1 -C .
+    curl -SL -O \
+        $COUCHDB_DOWNLOAD_URL && \
+        gpg --no-tty --verify <(curl -s ${COUCHDB_DOWNLOAD_URL}.asc) apache-couchdb-*.tar.gz && \
+        md5sum --check <(curl -s ${COUCHDB_DOWNLOAD_URL}.md5 | sed 's/\.2/-2/' | tr -d '\r') --status && \
+        sha1sum --check <(curl -s ${COUCHDB_DOWNLOAD_URL}.sha1 | sed 's/\.2/-2/' | tr -d '\r') --status && \
+        sha256sum --check <(curl -s ${COUCHDB_DOWNLOAD_URL}.sha256 | sed 's/SHA-256/SHA256/' | sed 's/\.2/-2/' | tr -d '\r') --status && \
+        tar xzvf apache-couchdb-*.tar.gz --strip-components=1 -C .
 
-    echo "Compiling $APP ..."
-    ./configure --user $USER --disable-docs
+        log::m-info "Compiling $APP ..."
+        ./configure --user $USER --disable-docs
+
+    # ref https://cwiki.apache.org/confluence/display/COUCHDB/Testing+a+Source+Release
+    if [[ $COUCHDB_CHECK_RELEASE == true ]]; then
+        DISTCHECK_CONFIGURE_FLAGS="--user $USER --disable-docs" make check
+    fi
+
     make release
     pushd rel/couchdb
         find . -type d -exec mkdir -p ~/\{} \;
@@ -48,16 +73,9 @@ pushd $_
     popd && rm -rf $OLDPWD
 
 
-echo "Purging unneeded ..."
-apt-get purge -qq -y --auto-remove \
-    build-essential \
-    ca-certificates \
-    erlang \
-    libcurl4-openssl-dev \
-    libicu-dev \
-    pkg-config
-
-apt-get install -qq -y libicu52
+log::m-info "Purging unneeded packages ..."
+apt-get purge -qqy --auto-remove ${apt_packages[@]}
+apt-get install -qq -y libicu57
 
 
 log::m-info "Adding app init to bash profile ..."
@@ -70,7 +88,7 @@ erlang::set-erl-dump
 EOF
 
 
-log::m-info "Cleaning up unnecessary files ..."
+log::m-info "Creating data directories ..."
 mkdir -p /volumes/$APP/{data,dumps}
 mkdir -p /data
 ln -s /volumes/$APP/data /data/$APP
