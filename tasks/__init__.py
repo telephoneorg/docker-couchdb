@@ -28,9 +28,6 @@ ns.configure(dict(
     ),
     kube=dict(
         environment='testing'
-    ),
-    test=dict(
-        env='-e "LOCAL_DEV_CLUSTER=true"'
     )
 ))
 

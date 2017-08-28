@@ -25,14 +25,14 @@ set -e
 
 
 for file in default.ini local.ini vm.args; do
-    if [[ -f /config/$file ]]; then
+    if [[ -e /config/$file ]]; then
         ln -sf /config/$file ~/etc/$file
         SKIP_AUTO_CONFIG=true
     fi
 done
 
 for dir in local.d default.d; do
-    if [[ -d /config/$dir ]]; then
+    if [[ -L /config/$dir || -d /config/$dir ]]; then
         ln -sf /config/$dir ~/etc/$dir
         SKIP_AUTO_CONFIG=true
     fi

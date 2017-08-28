@@ -13,7 +13,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
       - name: couchdb
-        image: callforamerica/couchdb:latest
+        image: joeblackwaslike/couchdb
         imagePullPolicy: IfNotPresent
         env:
         - name: COUCHDB_ADMIN_USER
@@ -28,6 +28,6 @@ spec:
         - name: admin
           containerPort: 5986
       - name: couchdiscover
-        image: callforamerica/couchdiscover:latest
+        image: joeblackwaslike/couchdiscover
         imagePullPolicy: IfNotPresent
       restartPolicy: Always

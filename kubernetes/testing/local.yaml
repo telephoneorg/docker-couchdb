@@ -29,13 +29,87 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  name: couchdb-templates
+  labels:
+    app: couchdb
+    test: 'true'
+    environment: testing
+data:
+  local.ini.j2: |
+    ---
+    target: /config/local.ini
+    ---
+    {% set config_map = env.get('CONFIG_MAP', 'couchdb') %}
+    {% set config = kube.get('configmap', config_map).data -%}
+
+    [couchdb]
+    database_dir = {{ config.get('couchdb.data-dir', '/volumes/couchdb/data') }}
+    view_index_dir = {{ config.get('couchdb.data-dir', '/volumes/couchdb/data') }}
+
+    [chttpd]
+    require_valid_user = {{ config.get('couchdb.require-valid-user', 'true') }}
+    port = {{ config.get('couchdb.port', '5984') }}
+    bind_address = 0.0.0.0
+
+    [httpd]
+    require_valid_user = {{ config.get('couchdb.require-valid-user', 'true') }}
+    port = {{ config.get('couchdb.port', '5986') }}
+    bind_address = 0.0.0.0
+
+    [cluster]
+    q={{ config.get('couchdb.shards', '2') }}
+    n={{ config.get('couchdb.replicas', '1') }}
+    r={{ config.get('couchdb.read-quorum', '1') }}
+    w={{ config.get('couchdb.write-quorum', '1') }}
+
+    [couch_httpd_auth]
+    iterations = 1000
+
+    [log]
+    level = {{ config.get('couchdb.log.level', 'info').lower() }}
+  vm.args.j2: |
+    ---
+    target: /config/vm.args
+    ---
+    {% set config_map = env.get('CONFIG_MAP', 'couchdb') %}
+    {% set config = kube.get('configmap', config_map).data -%}
+
+    # Turn off the sasl error logger
+    -sasl sasl_error_logger false
+
+    # Use the following erlang hostname
+    {% if config.get('kube.hostname') == 'long' %}
+    -name couchdb
+    {% else %}
+    -sname couchdb
+    {% endif %}
+
+    # Use kernel poll functionality if supported by emulator
+    +K true
+
+    # Start a pool of asynchronous IO threads
+    +A {{ config.get('erlang.threads', '25') }}
+
+    # Turn off the kernel error_logger
+    -kernel error_logger silent
+
+    # Set erlang distribution to use 11500-11999 ports instead of random
+    # predictibility has value here
+    -kernel inet_dist_listen_min 11500 inet_dist_listen_max 11999
+
+    # Comment this line out if you want the Erlang shell
+    +Bd -noinput
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
   name: couchdb
   labels:
     app: couchdb
     test: 'true'
     environment: testing
 data:
-  kube.use-long-hostname: 'true'
+  kube.hostname: long
   erlang.threads: '25'
   couchdb.log.level: info
   couchdb.require-valid-user: 'false'
@@ -44,6 +118,30 @@ data:
   couchdb.read-quorum: '1'
   couchdb.write-quorum: '2'
   couchdiscover.log.level: info
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: couchdb-healthz
+data:
+  liveness.yaml: |
+    http:
+      http://localhost:5984/_up/:
+        status: 200
+        allow-insecure: false
+        no-follow-redirects: false
+        timeout: 5000
+        body:
+        - '{"status":"ok"}'
+  readiness.yaml: |
+    http:
+      http://localhost:5984/_up/:
+        status: 200
+        allow-insecure: false
+        no-follow-redirects: false
+        timeout: 5000
+        body:
+        - '{"status":"ok"}'
 ---
 kind: Service
 apiVersion: v1
@@ -92,7 +190,7 @@ metadata:
     environment: testing
 spec:
   serviceName: couchdb
-  replicas: 3
+  replicas: 2
   template:
     metadata:
       labels:
@@ -100,17 +198,23 @@ spec:
         test: 'true'
         environment: testing
     spec:
-      terminationGracePeriodSeconds: 30
+      terminationGracePeriodSeconds: 0
+      initContainers:
+      - name: config
+        image: joeblackwaslike/tmpld
+        args:
+        - tmpld /templates/*.j2
+        volumeMounts:
+        - name: templates
+          mountPath: /templates
+        - name: config
+          mountPath: /config
       containers:
       - name: couchdb
-        image: callforamerica/couchdb:latest
-        imagePullPolicy: IfNotPresent
+        image: joeblackwaslike/couchdb:latest
         env:
         - name: USE_LONG_HOSTNAME
-          valueFrom:
-            configMapKeyRef:
-              name: couchdb
-              key: kube.use-long-hostname
+          value: 'true'
         - name: COUCHDB_ADMIN_USER
           valueFrom:
             secretKeyRef:
@@ -126,41 +230,6 @@ spec:
             secretKeyRef:
               name: erlang-cookie
               key: erlang.cookie
-        - name: ERLANG_THREADS
-          valueFrom:
-            configMapKeyRef:
-              name: couchdb
-              key: erlang.threads
-        - name: COUCHDB_LOG_LEVEL
-          valueFrom:
-            configMapKeyRef:
-              name: couchdb
-              key: couchdb.log.level
-        - name: COUCHDB_REQUIRE_VALID_USER
-          valueFrom:
-            configMapKeyRef:
-              name: couchdb
-              key: couchdb.require-valid-user
-        - name: COUCHDB_SHARDS
-          valueFrom:
-            configMapKeyRef:
-              name: couchdb
-              key: couchdb.shards
-        - name: COUCHDB_REPLICAS
-          valueFrom:
-            configMapKeyRef:
-              name: couchdb
-              key: couchdb.replicas
-        - name: COUCHDB_READ_QUORUM
-          valueFrom:
-            configMapKeyRef:
-              name: couchdb
-              key: couchdb.read-quorum
-        - name: COUCHDB_WRITE_QUORUM
-          valueFrom:
-            configMapKeyRef:
-              name: couchdb
-              key: couchdb.write-quorum
         ports:
         - name: data
           containerPort: 5984
@@ -168,22 +237,45 @@ spec:
           containerPort: 5986
         readinessProbe:
           httpGet:
-            path: /
-            port: 5984
-          initialDelaySeconds: 10
-          timeoutSeconds: 3
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 5
+          timeoutSeconds: 2
           successThreshold: 1
           failureThreshold: 5
         livenessProbe:
           httpGet:
-            path: /
-            port: 5984
+            path: /healthz
+            port: 8081
           initialDelaySeconds: 15
-          timeoutSeconds: 3
+          timeoutSeconds: 2
           successThreshold: 1
           failureThreshold: 5
+      - name: healthz-ready
+        image: joeblackwaslike/goss
+        imagePullPolicy: IfNotPresent
+        command:
+        - healthz
+        ports:
+        - name: healthz-ready
+          containerPort: 8080
+        volumeMounts:
+        - name: healthz
+          mountPath: /goss
+      - name: healthz-live
+        image: joeblackwaslike/goss
+        imagePullPolicy: IfNotPresent
+        command:
+        - healthz
+        - liveness
+        ports:
+        - name: healthz-live
+          containerPort: 8081
+        volumeMounts:
+        - name: healthz
+          mountPath: /goss
       - name: couchdiscover
-        image: callforamerica/couchdiscover:latest
+        image: joeblackwaslike/couchdiscover
         imagePullPolicy: IfNotPresent
         env:
         - name: LOG_LEVEL
@@ -191,4 +283,13 @@ spec:
             configMapKeyRef:
               name: couchdb
               key: couchdiscover.log.level
+      volumes:
+      - name: templates
+        configMap:
+          name: couchdb-templates
+      - name: config
+        emptyDir: {}
+      - name: healthz
+        configMap:
+          name: couchdb-healthz
       restartPolicy: Always

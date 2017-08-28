@@ -24,23 +24,23 @@ ENV     HOME /opt/$APP
 COPY    build.sh /tmp/
 RUN     /tmp/build.sh
 
-COPY    build/50-couchdb-functions.sh /etc/profile.d/
-COPY    build/couchdb-helper /usr/local/bin/
+COPY    50-couchdb-functions.sh /etc/profile.d/
+COPY    couchdb-helper /usr/local/bin/
 
 COPY    entrypoint /
+COPY    goss /goss
 
 ENV     ERL_MAX_PORTS 65536
 ENV     COUCHDB_LOG_LEVEL info
 
 EXPOSE  5984 5986
 
-VOLUME  ["/volumes/couchdb/data"]
+VOLUME  ["/volumes/couchdb/data", "/config"]
 
 WORKDIR $HOME
 
 SHELL       ["/bin/bash", "-lc"]
-HEALTHCHECK --interval=15s --timeout=5s \
-    CMD curl -f -s http://localhost:5984/_users || exit 1
+HEALTHCHECK --interval=15s --timeout=5s CMD goss -g /goss/goss.yaml validate
 
 ENTRYPOINT  ["/dumb-init", "--"]
 CMD         ["/entrypoint"]

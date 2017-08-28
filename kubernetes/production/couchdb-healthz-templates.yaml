@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: couchdb-healthz
+  labels:
+    app: couchdb
+    project: telephoneorg
+    environment: production
+data:
+  liveness.yaml: |
+    http:
+      http://localhost:5984/_up/:
+        status: 200
+        allow-insecure: false
+        no-follow-redirects: false
+        timeout: 5000
+        body:
+        - '{"status":"ok"}'
+  readiness.yaml: |
+    http:
+      http://localhost:5984/_up/:
+        status: 200
+        allow-insecure: false
+        no-follow-redirects: false
+        timeout: 5000
+        body:
+        - '{"status":"ok"}'

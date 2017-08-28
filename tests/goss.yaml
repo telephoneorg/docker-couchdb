@@ -38,7 +38,7 @@ file:
     group: couchdb
     filetype: file
     contains:
-    - -sname couchdb
+    - name couchdb
     - -kernel inet_dist_listen_min 11500 inet_dist_listen_max 11999
   /usr/local/bin/couchdb-helper:
     exists: true

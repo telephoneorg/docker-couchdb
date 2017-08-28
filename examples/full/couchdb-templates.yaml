@@ -1,0 +1,69 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: couchdb-templates
+data:
+  local.ini.j2: |
+    ---
+    target: /config/local.ini
+    ---
+    {% set config_map = env.get('CONFIG_MAP', 'couchdb') %}
+    {% set config = kube.get('configmap', config_map).data -%}
+
+    [couchdb]
+    database_dir = {{ config.get('couchdb.data-dir', '/volumes/couchdb/data') }}
+    view_index_dir = {{ config.get('couchdb.data-dir', '/volumes/couchdb/data') }}
+
+    [chttpd]
+    require_valid_user = {{ config.get('couchdb.require-valid-user', 'true') }}
+    port = {{ config.get('couchdb.port', '5984') }}
+    bind_address = 0.0.0.0
+
+    [httpd]
+    require_valid_user = {{ config.get('couchdb.require-valid-user', 'true') }}
+    port = {{ config.get('couchdb.port', '5986') }}
+    bind_address = 0.0.0.0
+
+    [cluster]
+    q={{ config.get('couchdb.shards', '2') }}
+    n={{ config.get('couchdb.replicas', '1') }}
+    r={{ config.get('couchdb.read-quorum', '1') }}
+    w={{ config.get('couchdb.write-quorum', '1') }}
+
+    [couch_httpd_auth]
+    iterations = 1000
+
+    [log]
+    level = {{ config.get('couchdb.log.level', 'info').lower() }}
+  vm.args.j2: |
+    ---
+    target: /config/vm.args
+    ---
+    {% set config_map = env.get('CONFIG_MAP', 'couchdb') %}
+    {% set config = kube.get('configmap', config_map).data -%}
+
+    # Turn off the sasl error logger
+    -sasl sasl_error_logger false
+
+    # Use the following erlang hostname
+    {% if config.get('kube.hostname') == 'long' %}
+    -name couchdb
+    {% else %}
+    -sname couchdb
+    {% endif %}
+
+    # Use kernel poll functionality if supported by emulator
+    +K true
+
+    # Start a pool of asynchronous IO threads
+    +A {{ config.get('erlang.threads', '25') }}
+
+    # Turn off the kernel error_logger
+    -kernel error_logger silent
+
+    # Set erlang distribution to use 11500-11999 ports instead of random
+    # predictibility has value here
+    -kernel inet_dist_listen_min 11500 inet_dist_listen_max 11999
+
+    # Comment this line out if you want the Erlang shell
+    +Bd -noinput

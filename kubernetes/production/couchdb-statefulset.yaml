@@ -4,7 +4,7 @@ metadata:
   name: couchdb
   labels:
     app: couchdb
-    project: valuphone
+    project: telephoneorg
     environment: production
 spec:
   serviceName: couchdb
@@ -13,19 +13,27 @@ spec:
     metadata:
       labels:
         app: couchdb
-        project: valuphone
+        project: telephoneorg
         environment: production
     spec:
       terminationGracePeriodSeconds: 30
+      initContainers:
+      - name: config
+        image: joeblackwaslike/tmpld
+        imagePullPolicy: IfNotPresent
+        args:
+        - tmpld /templates/*.j2
+        volumeMounts:
+        - name: templates
+          mountPath: /templates
+        - name: config
+          mountPath: /config
       containers:
       - name: couchdb
-        image: callforamerica/couchdb
+        image: callforamerica/couchdb:latest
         env:
         - name: USE_LONG_HOSTNAME
-          valueFrom:
-            configMapKeyRef:
-              name: couchdb
-              key: kube.use-long-hostname
+          value: 'true'
         - name: COUCHDB_ADMIN_USER
           valueFrom:
             secretKeyRef:
@@ -41,41 +49,6 @@ spec:
             secretKeyRef:
               name: erlang-cookie
               key: erlang.cookie
-        - name: ERLANG_THREADS
-          valueFrom:
-            configMapKeyRef:
-              name: couchdb
-              key: erlang.threads
-        - name: COUCHDB_LOG_LEVEL
-          valueFrom:
-            configMapKeyRef:
-              name: couchdb
-              key: couchdb.log.level
-        - name: COUCHDB_REQUIRE_VALID_USER
-          valueFrom:
-            configMapKeyRef:
-              name: couchdb
-              key: couchdb.require-valid-user
-        - name: COUCHDB_SHARDS
-          valueFrom:
-            configMapKeyRef:
-              name: couchdb
-              key: couchdb.shards
-        - name: COUCHDB_REPLICAS
-          valueFrom:
-            configMapKeyRef:
-              name: couchdb
-              key: couchdb.replicas
-        - name: COUCHDB_READ_QUORUM
-          valueFrom:
-            configMapKeyRef:
-              name: couchdb
-              key: couchdb.read-quorum
-        - name: COUCHDB_WRITE_QUORUM
-          valueFrom:
-            configMapKeyRef:
-              name: couchdb
-              key: couchdb.write-quorum
         ports:
         - name: data
           containerPort: 5984
@@ -90,26 +63,49 @@ spec:
             memory: 1Gi
         readinessProbe:
           httpGet:
-            path: /_up
-            port: 5984
-          initialDelaySeconds: 10
-          timeoutSeconds: 3
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 5
+          timeoutSeconds: 2
           successThreshold: 1
           failureThreshold: 5
         livenessProbe:
           httpGet:
-            path: /_up
-            port: 5984
+            path: /healthz
+            port: 8081
           initialDelaySeconds: 15
-          timeoutSeconds: 3
+          timeoutSeconds: 2
           successThreshold: 1
           failureThreshold: 5
         volumeMounts:
         - name: couchdb-data
           mountPath: /volumes/couchdb/data
         imagePullPolicy: Always
+      - name: healthz-ready
+        image: joeblackwaslike/goss
+        imagePullPolicy: IfNotPresent
+        command:
+        - healthz
+        ports:
+        - name: healthz-ready
+          containerPort: 8080
+        volumeMounts:
+        - name: healthz
+          mountPath: /goss
+      - name: healthz-live
+        image: joeblackwaslike/goss
+        imagePullPolicy: IfNotPresent
+        command:
+        - healthz
+        - liveness
+        ports:
+        - name: healthz-live
+          containerPort: 8081
+        volumeMounts:
+        - name: healthz
+          mountPath: /goss
       - name: couchdiscover
-        image: callforamerica/couchdiscover:latest
+        image: joeblackwaslike/couchdiscover
         imagePullPolicy: IfNotPresent
         env:
         - name: LOG_LEVEL
@@ -117,7 +113,15 @@ spec:
             configMapKeyRef:
               name: couchdb
               key: couchdiscover.log.level
-      restartPolicy: Always
+      volumes:
+      - name: templates
+        configMap:
+          name: couchdb-templates
+      - name: config
+        emptyDir: {}
+      - name: healthz
+        configMap:
+          name: couchdb-healthz
   volumeClaimTemplates:
   - metadata:
       name: couchdb-data
@@ -127,3 +131,4 @@ spec:
       resources:
         requests:
           storage: 100Gi
+      restartPolicy: Always

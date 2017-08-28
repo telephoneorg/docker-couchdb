@@ -4,10 +4,10 @@ metadata:
   name: couchdb
   labels:
     app: couchdb
-    project: valuphone
+    project: telephoneorg
     environment: production
 data:
-  kube.use-long-hostname: 'true'
+  kube.hostname: long
   erlang.threads: '25'
   couchdb.log.level: info
   couchdb.require-valid-user: 'false'
