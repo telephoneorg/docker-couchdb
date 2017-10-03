@@ -3,9 +3,9 @@ heading:
 description:
 github:
   user: joeblackwaslike
-  org: joeblackwaslike
+  org: telephoneorg
   repo: docker-couchdb
 docker:
   user: joeblackwaslike
-  org: joeblackwaslike
+  org: telephoneorg
   repo: couchdb

@@ -8,7 +8,7 @@ services:
       args:
         ERLANG_VERSION: 19.2
         COUCHDB_VERSION: 2.1.0
-    image: ${DOCKER_ORG:-joeblackwaslike}/couchdb:${DOCKER_TAG:-latest}
+    image: ${DOCKER_ORG:-telephoneorg}/couchdb:${DOCKER_TAG:-latest}
     environment:
       LOCAL_DEV_CLUSTER: 'true'
       COUCHDB_ADMIN_USER: admin
