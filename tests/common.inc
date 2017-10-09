@@ -2,7 +2,7 @@
 
 BASEDIR=$(dirname $0)
 TESTDIR=$(realpath $BASEDIR/..)
-IMAGE=${DOCKER_ORG:-joeblackwaslike}/dcgoss:latest
+IMAGE=${DOCKER_ORG:-telephoneorg}/dcgoss:latest
 COMMAND=$(basename $0)
 
 docker pull $IMAGE

@@ -1,4 +1,4 @@
-FROM joeblackwaslike/debian:stretch
+FROM telephoneorg/debian:stretch
 
 MAINTAINER Joe Black <me@joeblack.nyc>
 

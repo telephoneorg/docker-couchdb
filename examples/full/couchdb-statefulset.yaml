@@ -13,7 +13,7 @@ spec:
       terminationGracePeriodSeconds: 30
       initContainers:
       - name: config
-        image: joeblackwaslike/tmpld
+        image: telephoneorg/tmpld
         imagePullPolicy: IfNotPresent
         args:
         - tmpld /templates/*.j2
@@ -24,7 +24,7 @@ spec:
           mountPath: /config
       containers:
       - name: couchdb
-        image: joeblackwaslike/couchdb:latest
+        image: telephoneorg/couchdb:latest
         env:
         - name: USE_LONG_HOSTNAME
           value: 'true'
@@ -75,7 +75,7 @@ spec:
         - name: couchdb-data
           mountPath: /volumes/couchdb/data
       - name: healthz-ready
-        image: joeblackwaslike/goss
+        image: telephoneorg/goss
         imagePullPolicy: IfNotPresent
         command:
         - healthz
@@ -86,7 +86,7 @@ spec:
         - name: healthz
           mountPath: /goss
       - name: healthz-live
-        image: joeblackwaslike/goss
+        image: telephoneorg/goss
         imagePullPolicy: IfNotPresent
         command:
         - healthz
@@ -98,7 +98,7 @@ spec:
         - name: healthz
           mountPath: /goss
       - name: couchdiscover
-        image: joeblackwaslike/couchdiscover
+        image: telephoneorg/couchdiscover
         imagePullPolicy: IfNotPresent
         env:
         - name: LOG_LEVEL

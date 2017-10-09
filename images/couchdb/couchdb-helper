@@ -12,7 +12,7 @@
 # This tool was created to address this problem for a local development
 # cluster.  For production and clustering you should use the kubernetes
 # sidecar container I've created that handles discovery and autoclustering,
-# more info at: https://www.github.com/sip-li/docker-couchdb.
+# more info at: https://www.github.com/telephoneorg/docker-couchdb.
 
 # How it works:
 

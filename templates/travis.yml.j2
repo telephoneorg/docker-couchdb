@@ -5,11 +5,8 @@ target: '.travis.yml'
 {% set github_user = data.get('vars')['github']['user'] -%}
 {% set github_org = data.get('vars')['github']['org'] -%}
 {% set docker_user = data.get('vars')['docker']['user'] -%}
-{% set docker_org = data.get('vars')['docker']['user'] -%}
-{% if docker_org == 'joeblackwaslike' -%}
-  {% set docker_pass = env.get('DOCKER_PASS_JOEBLACKWASLIKE') -%}
-{% endif %}
-{% set github_token = env.get('GITHUB_TOKEN') -%}
+{% set docker_org = data.get('vars')['docker']['org'] -%}
+{% set docker_pass = env.get('DOCKER_PASS_JOEBLACKWASLIKE') -%}
 {% set slack_secret = env.get('TRAVIS_SLACK_SECRET') -%}
 
 addons:
@@ -26,21 +23,17 @@ env:
   - GITHUB_ORG={{ github_org }}
   - DOCKER_USER={{ docker_user }}
   - DOCKER_ORG={{ docker_org }}
-{% if docker_pass %}
   # DOCKER_PASS
   - secure: {{ shell('travis encrypt --no-interactive "DOCKER_PASS={}"'.format(docker_pass)).out.strip() }}
-{% endif %}
 notifications:
   email:
     on_success: never
     on_failure: always
-{% if docker_org == 'joeblackwaslike' and slack_secret %}
   slack:
     rooms:
     - secure: {{ shell('travis encrypt --no-interactive "{}"'.format(slack_secret)).out.strip() }}
     on_success: always
     on_failure: always
-{% endif %}
 
 before_install:
 - source scripts/ci/environment.sh

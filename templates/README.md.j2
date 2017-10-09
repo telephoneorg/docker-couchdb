@@ -1,5 +1,19 @@
+---
+target: README.md
+---
+{% set github = data.get('vars')['github'] -%}
+{% set github_user = github['user'] -%}
+{% set github_org = github['org'] -%}
+{% set github_repo = github['repo'] -%}
+
+{% set docker = data.get('vars')['docker'] -%}
+{% set docker_org = docker['org'] -%}
+{% set docker_repo = docker['repo'] -%}
+
+{% set github_branch = env.get('BRANCH', 'master') -%}
+
 # CouchDB 2.0 for Kubernetes w/ manifests
-[![Build Status](https://travis-ci.org/telephoneorg/docker-couchdb.svg?branch=master)](https://travis-ci.org/telephoneorg/docker-couchdb) [![Docker Pulls](https://img.shields.io/docker/pulls/telephoneorg/couchdb.svg)](https://hub.docker.com/r/telephoneorg/couchdb/) [![Github Repo](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/telephoneorg/docker-couchdb)
+[![Build Status](https://travis-ci.org/{{ github_org }}/{{ github_repo }}.svg?branch={{ github_branch }})](https://travis-ci.org/{{ github_org }}/{{ github_repo }}) [![Docker Pulls](https://img.shields.io/docker/pulls/{{ docker_org }}/{{ docker_repo }}.svg)](https://hub.docker.com/r/{{ docker_org }}/{{ docker_repo }}/) [![Github Repo](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/{{ github_org }}/{{ github_repo }})
 
 
 ## Maintainer
@@ -52,9 +66,9 @@ Run environment variables are used in the entrypoint script to render configurat
 All of our docker-* repos in github have CI pipelines that push to docker cloud/hub.
 
 This image is available at:
-* https://store.docker.com/community/images/telephoneorg/couchdb
-* https://hub.docker.com/r/telephoneorg/couchdb
-* `docker pull telephoneorg/couchdb`
+* https://store.docker.com/community/images/{{ docker_org }}/{{ docker_repo }}
+* https://hub.docker.com/r/{{ docker_org }}/{{ docker_repo }}
+* `docker pull {{ docker_org }}/{{ docker_repo }}`
 
 To run:
 
@@ -66,7 +80,7 @@ docker run -d \
     -e "COUCHDB_ADMIN_USER=admin" \
     -e "COUCHDB_ADMIN_PASS=secret" \
     -e "ERLANG_COOKIE=test-cookie" \
-    telephoneorg/couchdb
+    {{ docker_org }}/{{ docker_repo }}
 ```
 
 **NOTE:** Please reference the Run Environment section for the list of available environment variables.

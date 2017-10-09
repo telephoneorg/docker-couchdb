@@ -19,10 +19,10 @@ ns.configure(dict(
     pwd=os.getcwd(),
     docker=dict(
         user=os.getenv('DOCKER_USER'),
-        org=os.getenv('DOCKER_ORG', os.getenv('DOCKER_USER', 'joeblackwaslike')),
+        org=os.getenv('DOCKER_ORG', os.getenv('DOCKER_USER', 'telephoneorg')),
         name='couchdb',
         tag='%s/%s:latest' % (
-            os.getenv('DOCKER_ORG', os.getenv('DOCKER_USER', 'joeblackwaslike')), 'couchdb'
+            os.getenv('DOCKER_ORG', os.getenv('DOCKER_USER', 'telephoneorg')), 'couchdb'
         ),
         shell='bash'
     ),
