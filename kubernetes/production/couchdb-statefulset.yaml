@@ -32,22 +32,25 @@ spec:
       - name: couchdb
         image: telephoneorg/couchdb:latest
         env:
-        - name: USE_LONG_HOSTNAME
-          value: 'true'
+        - name: ERLANG_HOSTNAME
+          valueFrom:
+            configMapKeyRef:
+              name: couchdb
+              key: erlang.hostname
         - name: COUCHDB_ADMIN_USER
           valueFrom:
             secretKeyRef:
-              name: couchdb-creds
+              name: couchdb
               key: couchdb.user
         - name: COUCHDB_ADMIN_PASS
           valueFrom:
             secretKeyRef:
-              name: couchdb-creds
+              name: couchdb
               key: couchdb.pass
         - name: ERLANG_COOKIE
           valueFrom:
             secretKeyRef:
-              name: erlang-cookie
+              name: erlang
               key: erlang.cookie
         ports:
         - name: data

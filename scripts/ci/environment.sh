@@ -188,6 +188,19 @@ function _hub-update-readme {
         -d @<(jq -MRcs '{"registry":"registry-1.docker.io","full_description": . }' $file)
 }
 
+function hub-trigger {
+    if [[ -z $BUILD_TOKEN ]]; then
+        printf 'BUILD_TOKEN not set.\n'
+        return 1
+    fi
+    local name=$(get-name)
+    local tag=$(get-docker-tag)
+    local org=$(get-docker-org)
+    curl -s -X POST -H "Content-Type: application/json" \
+    	--data '{"docker_tag": "$tag"}' \
+    	https://registry.hub.docker.com/u/$org/$name/trigger/$BUILD_TOKEN/
+}
+
 
 if [[ -f scripts/ci/vars.env ]]; then
     source scripts/ci/vars.env

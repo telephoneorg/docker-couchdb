@@ -4,20 +4,20 @@
 apiVersion: v1
 kind: Secret
 metadata:
-  name: couchdb-creds
+  name: couchdb
   labels:
     app: couchdb
     test: 'true'
     environment: testing
 type: Opaque
 data:
-  couchdb.pass: RVZCNklCQVhWMTlUWEtlQWZ4dWRUQkk0RVk3dzljaWk=
   couchdb.user: Y29sbGFib3JhdGU=
+  couchdb.pass: RVZCNklCQVhWMTlUWEtlQWZ4dWRUQkk0RVk3dzljaWk=
 ---
 apiVersion: v1
 kind: Secret
 metadata:
-  name: erlang-cookie
+  name: erlang
   labels:
     app: couchdb
     test: 'true'
@@ -78,7 +78,7 @@ data:
     -sasl sasl_error_logger false
 
     # Use the following erlang hostname
-    {% if config.get('kube.hostname') == 'long' %}
+    {% if config.get('erlang.hostname') == 'long' %}
     -name couchdb
     {% else %}
     -sname couchdb
@@ -109,7 +109,7 @@ metadata:
     test: 'true'
     environment: testing
 data:
-  kube.hostname: long
+  erlang.hostname: long
   erlang.threads: '25'
   couchdb.log.level: info
   couchdb.require-valid-user: 'false'
@@ -213,22 +213,25 @@ spec:
       - name: couchdb
         image: telephoneorg/couchdb:latest
         env:
-        - name: USE_LONG_HOSTNAME
-          value: 'true'
+        - name: ERLANG_HOSTNAME
+          valueFrom:
+            configMapKeyRef:
+              name: couchdb
+              key: erlang.hostname
         - name: COUCHDB_ADMIN_USER
           valueFrom:
             secretKeyRef:
-              name: couchdb-creds
+              name: couchdb
               key: couchdb.user
         - name: COUCHDB_ADMIN_PASS
           valueFrom:
             secretKeyRef:
-              name: couchdb-creds
+              name: couchdb
               key: couchdb.pass
         - name: ERLANG_COOKIE
           valueFrom:
             secretKeyRef:
-              name: erlang-cookie
+              name: erlang
               key: erlang.cookie
         ports:
         - name: data

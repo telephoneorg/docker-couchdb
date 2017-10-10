@@ -21,6 +21,7 @@ set -e
 : declare -ir ${COUCHDB_REPLICAS:=1}  # This should be set to 3 on a cluster
 
 : readonly ${LOCAL_DEV_CLUSTER:=false}
+
 : ${SKIP_AUTO_CONFIG:=false}
 
 

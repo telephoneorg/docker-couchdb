@@ -5,7 +5,7 @@ metadata:
   labels:
     app: couchdb
 data:
-  kube.hostname: long
+  erlang.hostname: long
   erlang.threads: '25'
   couchdb.log.level: info
   couchdb.require-valid-user: 'false'

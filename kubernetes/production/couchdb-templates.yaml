@@ -50,7 +50,7 @@ data:
     -sasl sasl_error_logger false
 
     # Use the following erlang hostname
-    {% if config.get('kube.hostname') == 'long' %}
+    {% if config.get('erlang.hostname') == 'long' %}
     -name couchdb
     {% else %}
     -sname couchdb
