@@ -4,23 +4,12 @@ set -e
 
 : readonly ${COUCHDB_CHECK_RELEASE:=false}
 
-if [ ! -z $COUCHDB_RC ]; then
-    COUCHDB_DOWNLOAD_URL=https://dist.apache.org/repos/dist/dev/couchdb/source/${COUCHDB_VERSION}/rc.${COUCHDB_RC}/apache-couchdb-${COUCHDB_VERSION}-RC${COUCHDB_RC}.tar.gz
-else
-    COUCHDB_DOWNLOAD_URL=https://dist.apache.org/repos/dist/release/couchdb/source/${COUCHDB_VERSION}/apache-couchdb-${COUCHDB_VERSION}.tar.gz
-fi
-
 
 # Use local cache proxy if it can be reached, else nothing.
 eval $(detect-proxy enable)
 
 build::user::create $USER
 
-
-# log::m-info "Installing erlang repo ..."
-# echo 'deb http://ftp.debian.org/debian jessie-backports main' > \
-#     /etc/apt/sources.list.d/jessie-backports.list
-# echo 'APT::Default-Release "stretch";' > /etc/apt/apt.conf.d/99-default-release
 
 log::m-info "Installing dependencies ..."
 apt_packages=(
@@ -37,16 +26,17 @@ apt-get update -qq
 apt-get install -qqy ${apt_packages[@]} curl
 
 
-# apt_erl_vsn=$(build::apt::get-version erlang)
-# log::m-info "Installing erlang $apt_erl_vsn ..."
-# apt-get -t jessie-backports install -yqq erlang=$apt_erl_vsn
-
-
 # Add the following keys
 gpg --recv-key 118F1A7C 43ECCEE1 DF3CEBA3 04F4EE9B 30380381 7852AEE4
 
 
 log::m-info "Installing $APP $COUCHDB_VERSION $COUCHDB_RC ..."
+if [ ! -z $COUCHDB_RC ]; then
+    COUCHDB_DOWNLOAD_URL=https://dist.apache.org/repos/dist/dev/couchdb/source/${COUCHDB_VERSION}/rc.${COUCHDB_RC}/apache-couchdb-${COUCHDB_VERSION}-RC${COUCHDB_RC}.tar.gz
+else
+    COUCHDB_DOWNLOAD_URL=https://dist.apache.org/repos/dist/release/couchdb/source/${COUCHDB_VERSION}/apache-couchdb-${COUCHDB_VERSION}.tar.gz
+fi
+
 mkdir -p /tmp/couchdb
 pushd $_
     curl -SL -O \

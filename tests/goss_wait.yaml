@@ -6,7 +6,7 @@ http:
     timeout: 5000
     body:
     - '{"status":"ok"}'
-  http://localhost:5984/_users:
+  http://admin:secret@localhost:5984/_users:
     status: 200
     allow-insecure: false
     no-follow-redirects: false

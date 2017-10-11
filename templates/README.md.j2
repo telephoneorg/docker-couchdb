@@ -12,7 +12,7 @@ target: README.md
 
 {% set github_branch = env.get('BRANCH', 'master') -%}
 
-# CouchDB 2.0 for Kubernetes w/ manifests
+# CouchDB 2.x for Kubernetes w/ manifests
 [![Build Status](https://travis-ci.org/{{ github_org }}/{{ github_repo }}.svg?branch={{ github_branch }})](https://travis-ci.org/{{ github_org }}/{{ github_repo }}) [![Docker Pulls](https://img.shields.io/docker/pulls/{{ docker_org }}/{{ docker_repo }}.svg)](https://hub.docker.com/r/{{ docker_org }}/{{ docker_repo }}/) [![Github Repo](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/{{ github_org }}/{{ github_repo }})
 
 
@@ -26,7 +26,6 @@ Minimal image with a sidecar container that performs automatic cluster initializ
 
 ## Build Environment
 Build environment variables are often used in the build script to bump version numbers and set other options during the docker build phase.  Their values can be overridden using a build argument of the same name.
-* `ERLANG_VERSION`: the version of erlang to install. Defaults to `19.2`.
 * `COUCHDB_VERSION`: the version of couchdb to install. Defaults to `2.1.0`.
 * `COUCHDB_RC`: the release candidate number (if applicable). No default.
 * `COUCHDB_CHECK_RELEASE`: Determines whether `make check` will run before `make release`, boolean. Defaults to `false`.
@@ -51,7 +50,7 @@ Run environment variables are used in the entrypoint script to render configurat
 * `COUCHDB_READ_QUORUM`: used as the value for `r` in the `cluster` section of `local.ini`.  Defaults to `1`.
 * `COUCHDB_WRITE_QUORUM`: used as the value for `w` in the `cluster` section of `local.ini`.  Defaults to `1`.
 * `COUCHDB_REPLICAS`: used as the value for `n` in the `cluster` section of `local.ini`.  Defaults to `1`.
-* `LOCAL_DEV_CLUSTER`: when value is `true`, will trigger the couch-helper in the entrypoint script before starting couchdb.  Inject as true into the environment when running a simple single node dev cluster that should immediately auto-initialize.  Defaults to `false`.
+* `COUCHDB_DEV_INIT`: when value is `true`, will background the couchdb-dev script before starting couchdb.  Inject as true into the environment when running a simple single node dev cluster that should immediately auto-initialize.  Defaults to `false`.
 * `COUCHDB_ADMIN_USER`,`COUCHDB_ADMIN_PASS`: when set this will be available to the sidecar container `couchdiscover` and the script `couch-helper`. Your cluster will be auto initialized using these credentials. `couch-helper` is meant to be used for local single node clusters for development.
 * `ERLANG_COOKIE`: when set this value will be written to ~/.erlang.cookie and proper permissions applied prior to starting couchdb.
 * `COUCHDB_CLUSTER_SIZE`: when set this value override the value of the replica's field on the kubernetes statefulset manifest. Do not use unless you really need to override the default behavior for some reason.
@@ -76,7 +75,7 @@ To run:
 docker run -d \
     --name couchdb \
     -h couchdb.local \
-    -e "LOCAL_DEV_CLUSTER=true" \
+    -e "COUCHDB_DEV_INIT=true" \
     -e "COUCHDB_ADMIN_USER=admin" \
     -e "COUCHDB_ADMIN_PASS=secret" \
     -e "ERLANG_COOKIE=test-cookie" \
@@ -107,12 +106,12 @@ Edit the manifests under `kubernetes/<environment>` to reflect your specific env
 
 Create a secret for the erlang cookie:
 ```bash
-kubectl create secret generic erlang-cookie --from-literal=erlang.cookie=$(LC_ALL=C tr -cd '[:alnum:]' < /dev/urandom | head -c 64)
+kubectl create secret generic erlang --from-literal=erlang.cookie=$(LC_ALL=C tr -cd '[:alnum:]' < /dev/urandom | head -c 64)
 ```
 
 Create a secret for the couchdb credentials:
 ```bash
-kubectl create secret generic couchdb-creds --from-literal=couchdb.user=$(sed $(perl -e "print int rand(99999)")"q;d" /usr/share/dict/words) --from-literal=couchdb.pass=$(LC_ALL=C tr -cd '[:alnum:]' < /dev/urandom | head -c 32)
+kubectl create secret generic couchdb --from-literal=couchdb.user=$(sed $(perl -e "print int rand(99999)")"q;d" /usr/share/dict/words) --from-literal=couchdb.pass=$(LC_ALL=C tr -cd '[:alnum:]' < /dev/urandom | head -c 32)
 ```
 
 Deploy couchdb:
@@ -163,6 +162,7 @@ def run(self):
             log.info("Looks like I'm not the last node")
     self.sleep_forever()
 ```
+
 
 ## Building and testing release candidates
 **Note:** Check the Build Environment Section at the top for a summary of the build arguments used here.  The command given is just an example, change it as necessary.

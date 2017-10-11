@@ -27,7 +27,7 @@ file:
     - port = 5984
     - port = 5986
     - q=2
-    - n=1
+    # - n=1
     - r=1
     - w=1
     - level = info
@@ -40,9 +40,12 @@ file:
     contains:
     - name couchdb
     - -kernel inet_dist_listen_min 11500 inet_dist_listen_max 11999
-  /usr/local/bin/couchdb-helper:
+  /usr/local/bin/couchdb-dev:
     exists: true
-    # mode: "0775"
+    mode:
+      or:
+      - "0775"
+      - "0755"
     size:
       gt: 1900
     owner: root
@@ -83,7 +86,7 @@ group:
   couchdb:
     exists: true
 command:
-  curl -X PUT -I http://localhost:5984/demo-db:
+  curl -X PUT -I http://admin:secret@localhost:5984/demo-db:
     exit-status: 0
     stdout:
     - HTTP/1.1 201 Created
@@ -94,7 +97,7 @@ command:
     - 'Content-Type: application/json'
     - 'Cache-Control: must-revalidate'
     timeout: 10000
-  'curl -X PUT http://localhost:5984/demo-db2 && curl --fail -X POST -H "Content-Type: application/json" --data "{\"_id\": \"test-document\"}" http://localhost:5984/demo-db2':
+  'curl -X PUT http://admin:secret@localhost:5984/demo-db2 && curl --fail -X POST -H "Content-Type: application/json" --data "{\"_id\": \"test-document\"}" http://admin:secret@localhost:5984/demo-db2':
     exit-status: 0
     stdout:
     - '{"ok":true,"id":"test-document","rev":"'
@@ -110,17 +113,17 @@ http:
     allow-insecure: false
     no-follow-redirects: false
     timeout: 5000
-  http://localhost:5984/_global_changes:
+  http://admin:secret@localhost:5984/_global_changes:
     status: 200
     allow-insecure: false
     no-follow-redirects: false
     timeout: 5000
-  http://localhost:5984/_metadata:
+  http://admin:secret@localhost:5984/_metadata:
     status: 404
     allow-insecure: false
     no-follow-redirects: false
     timeout: 5000
-  http://localhost:5984/_replicator:
+  http://admin:secret@localhost:5984/_replicator:
     status: 200
     allow-insecure: false
     no-follow-redirects: false
@@ -132,7 +135,7 @@ http:
     timeout: 5000
     body:
     - '{"status":"ok"}'
-  http://localhost:5984/_users:
+  http://admin:secret@localhost:5984/_users:
     status: 200
     allow-insecure: false
     no-follow-redirects: false
@@ -142,17 +145,17 @@ http:
     allow-insecure: false
     no-follow-redirects: false
     timeout: 5000
-  http://localhost:5986/_dbs:
+  http://admin:secret@localhost:5986/_dbs:
     status: 200
     allow-insecure: false
     no-follow-redirects: false
     timeout: 5000
-  http://localhost:5986/_nodes:
+  http://admin:secret@localhost:5986/_nodes:
     status: 200
     allow-insecure: false
     no-follow-redirects: false
     timeout: 5000
-  http://localhost:5986/_replicator:
+  http://admin:secret@localhost:5986/_replicator:
     status: 200
     allow-insecure: false
     no-follow-redirects: false
@@ -164,7 +167,7 @@ http:
   #   timeout: 5000
   #   body:
   #   - '{"status":"ok"}'
-  http://localhost:5986/_users:
+  http://admin:secret@localhost:5986/_users:
     status: 200
     allow-insecure: false
     no-follow-redirects: false

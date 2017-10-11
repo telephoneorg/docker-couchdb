@@ -16,6 +16,8 @@ spec:
         image: telephoneorg/couchdb
         imagePullPolicy: IfNotPresent
         env:
+        - name: ERLANG_HOSTNAME
+          value: long
         - name: COUCHDB_ADMIN_USER
           value: admin
         - name: COUCHDB_ADMIN_PASS

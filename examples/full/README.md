@@ -1,5 +1,5 @@
-# docker-couchdb full example
-
+# docker-couchdb
+## full example
 A full example of deploying CouchDB 2.0 with the `couchdiscover` sidecar in Kubernetes.
 
 
@@ -36,6 +36,7 @@ kubectl create secret generic couchdb --from-literal=couchdb.user=$(sed $(perl -
 ```
 
 Deploy couchdb:
+
 ```bash
 kubectl create -f kubernetes
 ```

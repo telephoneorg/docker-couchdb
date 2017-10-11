@@ -58,7 +58,7 @@ function couch::_parse-state {
         if [[ $line =~ unauthorized ]]; then
             echo 'unauthorized'
         else
-            echo "$line" | sed 's/{"state":"cluster_\(.*\)"}/\1/'
+            echo "$line" | sed 's/{"state":"\(.*\)"}/\1/' | awk -F_ '{print $NF}'
         fi
     done
 }
@@ -131,13 +131,12 @@ function couch::get-status {
 }
 
 # tests
-
 function couch::is-local-dev-cluster {
-    [[ $LOCAL_DEV_CLUSTER = true ]]
+    [[ $COUCHDB_DEV_INIT = true ]]
 }
 
 function couch::creds-in-env {
-    [[ ! -z ${COUCHDB_ADMIN_USER+x} && ! -z ${COUCHDB_ADMIN_PASS+x} ]]
+    [[ ! -z ${COUCHDB_ADMIN_USER} && ! -z ${COUCHDB_ADMIN_PASS} ]]
 }
 
 function couch::_early-is-enabled {
@@ -194,7 +193,7 @@ function couch::finish-cluster {
 }
 
 function couch::enable-cluster {
-    local payload="{\"action\": \"enable_cluster\", \"username\": \"$COUCHDB_ADMIN_USER\", \"password\": \"$COUCHDB_ADMIN_PASS\"}"
+    local payload="{\"action\": \"enable_cluster\", \"username\": \"$COUCHDB_ADMIN_USER\", \"password\": \"$COUCHDB_ADMIN_PASS\", \"node_count\": \"1\"}"
     local uri='/_cluster_setup'
     local method='POST'
     couch::_curl | couch::_parse-cluster-setup-resp | couch::_return-silent

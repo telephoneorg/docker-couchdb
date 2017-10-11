@@ -108,5 +108,5 @@ chown -R $USER:$USER ~/etc /volumes/$APP/{data,dumps}
 log::m-info "Starting $APP ..."
 cd ~
     # for local dev clusters.  see: /usr/local/bin/couchdb-helper
-    [[ $LOCAL_DEV_CLUSTER == true ]] && gosu $USER couchdb-helper &
+    [[ $COUCHDB_DEV_INIT == true ]] && gosu $USER couchdb-dev init &
     exec gosu $USER couchdb

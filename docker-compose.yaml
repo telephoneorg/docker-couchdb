@@ -6,11 +6,10 @@ services:
     build:
       context: images/couchdb/
       args:
-        ERLANG_VERSION: 19.2
         COUCHDB_VERSION: 2.1.0
     image: ${DOCKER_ORG:-telephoneorg}/couchdb:${DOCKER_TAG:-latest}
     environment:
-      LOCAL_DEV_CLUSTER: 'true'
+      COUCHDB_DEV_INIT: 'true'
       COUCHDB_ADMIN_USER: admin
       COUCHDB_ADMIN_PASS: secret
       ERLANG_COOKIE: test-cookie
