@@ -65,7 +65,7 @@ pushd $_
 
 log::m-info "Purging unneeded packages ..."
 apt-get purge -qqy --auto-remove ${apt_packages[@]}
-apt-get install -qq -y libicu57
+apt-get install -qq -y libicu57 libmozjs185-dev
 
 
 log::m-info "Adding app init to bash profile ..."

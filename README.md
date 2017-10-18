@@ -1,5 +1,5 @@
 # CouchDB 2.x for Kubernetes w/ manifests
-[![Build Status](https://travis-ci.org/telephoneorg/docker-couchdb.svg?branch=master)](https://travis-ci.org/telephoneorg/docker-couchdb) [![Docker Pulls](https://img.shields.io/docker/pulls/telephoneorg/couchdb.svg)](https://hub.docker.com/r/telephoneorg/couchdb/) [![Github Repo](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/telephoneorg/docker-couchdb)
+[![Build Status](https://travis-ci.org/telephoneorg/docker-couchdb.svg?branch=master)](https://travis-ci.org/telephoneorg/docker-couchdb) [![Docker Pulls](https://img.shields.io/docker/pulls/telephoneorg/couchdb.svg)](https://hub.docker.com/r/telephoneorg/couchdb/) [![Size/Layers](https://images.microbadger.com/badges/image/telephoneorg/cuchdb.svg)](https://microbadger.com/images/telephoneorg/monsterui) [![Github Repo](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/telephoneorg/docker-couchdb)
 
 
 ## Maintainer
@@ -92,12 +92,15 @@ Edit the manifests under `kubernetes/<environment>` to reflect your specific env
 
 Create a secret for the erlang cookie:
 ```bash
-kubectl create secret generic erlang --from-literal=erlang.cookie=$(LC_ALL=C tr -cd '[:alnum:]' < /dev/urandom | head -c 64)
+kubectl create secret generic erlang \      
+    --from-literal=erlang.cookie=$(LC_ALL=C tr -cd '[:alnum:]' < /dev/urandom | head -c 64)
 ```
 
 Create a secret for the couchdb credentials:
 ```bash
-kubectl create secret generic couchdb --from-literal=couchdb.user=$(sed $(perl -e "print int rand(99999)")"q;d" /usr/share/dict/words) --from-literal=couchdb.pass=$(LC_ALL=C tr -cd '[:alnum:]' < /dev/urandom | head -c 32)
+kubectl create secret generic couchdb \
+    --from-literal=couchdb.user=$(sed $(perl -e "print int rand(99999)")"q;d" /usr/share/dict/words) \
+    --from-literal=couchdb.pass=$(LC_ALL=C tr -cd '[:alnum:]' < /dev/urandom | head -c 32)
 ```
 
 Deploy couchdb:

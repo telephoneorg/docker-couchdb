@@ -125,6 +125,7 @@ spec:
       - name: healthz
         configMap:
           name: couchdb-healthz
+      restartPolicy: Always
   volumeClaimTemplates:
   - metadata:
       name: couchdb-data
@@ -134,4 +135,3 @@ spec:
       resources:
         requests:
           storage: 100Gi
-      restartPolicy: Always
