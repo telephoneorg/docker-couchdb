@@ -193,7 +193,7 @@ function couch::finish-cluster {
 }
 
 function couch::enable-cluster {
-    local payload="{\"action\": \"enable_cluster\", \"username\": \"$COUCHDB_ADMIN_USER\", \"password\": \"$COUCHDB_ADMIN_PASS\", \"node_count\": \"1\"}"
+    local payload="{\"action\": \"enable_single_node\", \"username\": \"$COUCHDB_ADMIN_USER\", \"password\": \"$COUCHDB_ADMIN_PASS\", \"singlenode\": true}"
     local uri='/_cluster_setup'
     local method='POST'
     couch::_curl | couch::_parse-cluster-setup-resp | couch::_return-silent

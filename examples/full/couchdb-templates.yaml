@@ -25,10 +25,10 @@ data:
     bind_address = 0.0.0.0
 
     [cluster]
-    q={{ config.get('couchdb.shards', '2') }}
-    n={{ config.get('couchdb.replicas', '1') }}
-    r={{ config.get('couchdb.read-quorum', '1') }}
-    w={{ config.get('couchdb.write-quorum', '1') }}
+    q = {{ config.get('couchdb.shards', '3') }}
+    n = {{ config.get('couchdb.replicas', '1') }}
+    r = {{ config.get('couchdb.read-quorum', '1') }}
+    w = {{ config.get('couchdb.write-quorum', '1') }}
 
     [couch_httpd_auth]
     iterations = 1000

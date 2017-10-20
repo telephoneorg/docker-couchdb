@@ -10,6 +10,9 @@ Joe Black | <me@joeblack.nyc> | [github](https://github.com/joeblackwaslike)
 Minimal image with a sidecar container that performs automatic cluster initialization.  There is also support for local dev environments to auto-finalize the cluster upon starting, as well as a couch-helper utility script.  This image uses a custom, minimal version of Debian Linux.
 
 
+This image also includes the couchdb-admin utility from https://github.com/cabify/couchdb-admin, see link for documentation.
+
+
 ## Build Environment
 Build environment variables are often used in the build script to bump version numbers and set other options during the docker build phase.  Their values can be overridden using a build argument of the same name.
 * `COUCHDB_VERSION`: the version of couchdb to install. Defaults to `2.1.0`.

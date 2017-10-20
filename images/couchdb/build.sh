@@ -63,6 +63,13 @@ pushd $_
     popd && rm -rf $OLDPWD
 
 
+log::m-info "Installing couchdb-admin ..."
+pushd /tmp
+    curl -LO https://github.com/cabify/couchdb-admin/releases/download/$COUCHDB_ADMIN_VERSION/couchdb-admin
+    chmod +x couchdb-admin
+    mv couchdb-admin /usr/bin
+
+
 log::m-info "Purging unneeded packages ..."
 apt-get purge -qqy --auto-remove ${apt_packages[@]}
 apt-get install -qq -y libicu57 libmozjs185-dev
@@ -75,6 +82,17 @@ erlang-cookie write
 
 # ref: http://erlang.org/doc/apps/erts/crash_dump.html
 erlang::set-erl-dump
+
+if linux::cap::is-enabled 'sys_resource'; then
+    echo "setting ulimits ..."
+    set-limits couchdb
+else
+    linux::cap::show-warning 'sys_resource'
+fi
+
+if linux::cap::is-disabled 'sys_nice'; then
+    linux::cap::show-warning 'sys_nice'
+fi
 EOF
 
 

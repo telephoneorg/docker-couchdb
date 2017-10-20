@@ -4,9 +4,10 @@ services:
     container_name: couchdb
     hostname: couchdb.local
     build:
-      context: images/couchdb/
+      context: images/couchdb
       args:
         COUCHDB_VERSION: 2.1.0
+        COUCHDB_ADMIN_VERSION: 0.1.0
     image: ${DOCKER_ORG:-telephoneorg}/couchdb:${DOCKER_TAG:-latest}
     environment:
       COUCHDB_DEV_INIT: 'true'
@@ -20,5 +21,8 @@ services:
       local:
         aliases:
         - couchdb.local
+    cap_add:
+    - SYS_NICE
+    - SYS_RESOURCE
 networks:
   local:

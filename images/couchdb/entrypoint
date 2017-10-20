@@ -5,7 +5,8 @@ set -e
 [[ -f /etc/entrypoint ]] && . /etc/entrypoint
 [[ -f /etc/default/$APP ]] && . /etc/default/$APP
 
-: declare -ir ${ERLANG_THREADS:=25}
+: declare -ir ${ERLANG_THREADS:=$(( $(nproc) * 8 ))}
+: declare -ir ${ERLANG_PROCESSES:=134217727}
 # options: debug info warning error none
 : readonly ${COUCHDB_LOG_LEVEL:=info}
 : readonly ${COUCHDB_DATA_PATH:=/data/$APP}
@@ -18,9 +19,10 @@ set -e
 : declare -ir ${COUCHDB_SHARDS:=2}
 : declare -ir ${COUCHDB_READ_QUORUM:=1}
 : declare -ir ${COUCHDB_WRITE_QUORUM:=1}
-: declare -ir ${COUCHDB_REPLICAS:=1}  # This should be set to 3 on a cluster
+# This should be set to 3 on a cluster
+: declare -ir ${COUCHDB_REPLICAS:=1}
 
-: readonly ${LOCAL_DEV_CLUSTER:=false}
+: readonly ${COUCHDB_DEV_INIT:=false}
 
 : ${SKIP_AUTO_CONFIG:=false}
 
@@ -56,6 +58,9 @@ $(erlang::vmargs::get-name couchdb)
 # Use kernel poll functionality if supported by emulator
 +K true
 
+# Maximum number of processes
++P $ERLANG_PROCESSES
+
 # Start a pool of asynchronous IO threads
 +A $ERLANG_THREADS
 
@@ -80,17 +85,20 @@ view_index_dir = $COUCHDB_DATA_PATH
 require_valid_user = $COUCHDB_REQUIRE_VALID_USER
 port = $COUCHDB_PORT
 bind_address = $COUCHDB_BIND_ADDR
+;server_options = [{backlog, 512}, {acceptor_pool_size, 32}]
 
 [httpd]
 require_valid_user = $COUCHDB_REQUIRE_VALID_USER
 port = $COUCHDB_ADMIN_PORT
 bind_address = $COUCHDB_BIND_ADDR
+;socket_options = [{recbuf, 262144}, {sndbuf, 262144}, {nodelay, true}]
+;server_options = [{backlog, 128}, {acceptor_pool_size, 16}]
 
 [cluster]
-q=$COUCHDB_SHARDS
-n=$COUCHDB_REPLICAS
-r=$COUCHDB_READ_QUORUM
-w=$COUCHDB_WRITE_QUORUM
+q = $COUCHDB_SHARDS
+n = $COUCHDB_REPLICAS
+r = $COUCHDB_READ_QUORUM
+w = $COUCHDB_WRITE_QUORUM
 
 [couch_httpd_auth]
 iterations = 1000

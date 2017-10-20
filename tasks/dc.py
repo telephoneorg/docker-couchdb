@@ -13,8 +13,12 @@ def flags_to_arg_string(flags):
 
 
 @task(default=True)
-def up(ctx):
-    ctx.run('docker-compose {}'.format('up'))
+def up(ctx, d=False):
+    flags = []
+    if d:
+        flags.append('-d')
+    flags = ' '.join(flags)
+    ctx.run('docker-compose {} {}'.format('up', flags))
 
 
 @task(pre=[call(up, d=True)])

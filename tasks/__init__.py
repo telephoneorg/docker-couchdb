@@ -3,10 +3,10 @@ import glob
 
 from invoke import Collection, task
 
-from . import test, dc, kube
+from . import test, dc, kube, hub
 
 
-COLLECTIONS = [test, dc, kube]
+COLLECTIONS = [test, dc, kube, hub]
 
 ns = Collection()
 for c in COLLECTIONS:
@@ -28,6 +28,9 @@ ns.configure(dict(
     ),
     kube=dict(
         environment='testing'
+    ),
+    hub=dict(
+        images=['couchdb']
     )
 ))
 
