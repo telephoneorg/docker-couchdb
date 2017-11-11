@@ -9,6 +9,8 @@ metadata:
 spec:
   serviceName: couchdb
   replicas: 3
+  updateStrategy:
+    type: RollingUpdate
   template:
     metadata:
       labels:
@@ -41,17 +43,17 @@ spec:
           valueFrom:
             secretKeyRef:
               name: couchdb
-              key: couchdb.user
+              key: user
         - name: COUCHDB_ADMIN_PASS
           valueFrom:
             secretKeyRef:
               name: couchdb
-              key: couchdb.pass
+              key: pass
         - name: ERLANG_COOKIE
           valueFrom:
             secretKeyRef:
               name: erlang
-              key: erlang.cookie
+              key: cookie
         ports:
         - name: data
           containerPort: 5984
@@ -59,11 +61,11 @@ spec:
           containerPort: 5986
         resources:
           requests:
-            cpu: 2
-            memory: 1Gi
+            cpu: 3
+            memory: 2Gi
           limits:
-            cpu: 2
-            memory: 1Gi
+            cpu: 3
+            memory: 2Gi
         readinessProbe:
           httpGet:
             path: /healthz

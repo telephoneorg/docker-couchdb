@@ -43,9 +43,6 @@ function init {
         if couch::is-disabled && couch::creds-in-env; then
             couch::enable-cluster
         fi
-        # if couch::is-not-finished && couch::is-missing-system-dbs; then
-        #     couch::finish-cluster
-        # fi
     fi
 }
 

@@ -8,9 +8,7 @@ metadata:
     environment: production
 data:
   erlang.hostname: long
-  erlang.threads: '25'
-  couchdb.log.level: info
-  couchdb.require-valid-user: 'false'
+  couchdb.log.level: warn
   couchdb.shards: '4'
   couchdb.replicas: '3'
   couchdb.read-quorum: '1'

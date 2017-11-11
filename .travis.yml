@@ -8,6 +8,7 @@ python:
 services: docker
 env:
   global:
+  # - DOCKER_TAG=2.1.1
   - GITHUB_USER=joeblackwaslike
   - GITHUB_ORG=telephoneorg
   - DOCKER_USER=joeblackwaslike
@@ -26,15 +27,14 @@ notifications:
     on_failure: always
 
 before_install:
-- source scripts/ci/environment.sh
+# - source scripts/ci/environment.sh
 - pip install --upgrade docker-compose
 - pip install invoke
 
 install: inv dc.build
-
 script: inv test
 
 after_success:
-- ci-tag-build
-- hub-push
-- hub-update-readme
+- inv ci.tag-build
+- inv hub.push
+- inv hub.update-readme

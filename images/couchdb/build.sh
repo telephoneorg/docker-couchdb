@@ -2,9 +2,6 @@
 
 set -e
 
-: readonly ${COUCHDB_CHECK_RELEASE:=false}
-
-
 # Use local cache proxy if it can be reached, else nothing.
 eval $(detect-proxy enable)
 
@@ -42,8 +39,6 @@ pushd $_
     curl -SL -O \
         $COUCHDB_DOWNLOAD_URL && \
         gpg --no-tty --verify <(curl -s ${COUCHDB_DOWNLOAD_URL}.asc) apache-couchdb-*.tar.gz && \
-        md5sum --check <(curl -s ${COUCHDB_DOWNLOAD_URL}.md5 | sed 's/\.2/-2/' | tr -d '\r') --status && \
-        sha1sum --check <(curl -s ${COUCHDB_DOWNLOAD_URL}.sha1 | sed 's/\.2/-2/' | tr -d '\r') --status && \
         sha256sum --check <(curl -s ${COUCHDB_DOWNLOAD_URL}.sha256 | sed 's/SHA-256/SHA256/' | sed 's/\.2/-2/' | tr -d '\r') --status && \
         tar xzvf apache-couchdb-*.tar.gz --strip-components=1 -C .
 
@@ -97,16 +92,24 @@ EOF
 
 
 log::m-info "Creating data directories ..."
-mkdir -p /volumes/$APP/{data,dumps}
-mkdir -p /data
+mkdir -p /volumes/$APP/{data,backups} /data /config
 ln -s /volumes/$APP/data /data/$APP
 
 
+log::m-info "Adding /etc/kazoo to fixattrs.d ..."
+tee /etc/fixattrs.d/20-${APP}-perms <<EOF
+~/etc/ true $USER:$USER 0644 0755
+/volumes/couchdb/data true $USER:$USER 0755 0755
+/volumes/couchdb/backups true $USER:$USER 0755 0755
+/config true $USER:$USER 0755 0755
+EOF
+
+
 log::m-info "Setting Ownership & Permissions ..."
-chown -R $USER:$USER ~ /volumes/$APP/{data,dumps} /data
+chown -R $USER:$USER ~ /volumes/$APP/{data,backups} /data /config
 
 find ~ -type d -exec chmod 0770 {} \;
-chmod 0777 /volumes/$APP/dumps
+chmod 0777 /volumes/$APP/{data,backups} /data /config
 chmod 0644 ~/etc/*
 
 

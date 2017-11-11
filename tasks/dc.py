@@ -1,3 +1,5 @@
+import os
+
 from invoke import task, call
 
 
@@ -39,6 +41,7 @@ def rmf(ctx):
 
 @task
 def build(ctx, rc=False):
+    os.environ.update(dict(DOCKER_TAG=ctx.docker['tag']))
     cmd = ['docker-compose']
     if rc:
         cmd.append('-f docker-compose-rc-test.yaml')

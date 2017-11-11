@@ -3,10 +3,10 @@ import glob
 
 from invoke import Collection, task
 
-from . import test, dc, kube, hub
+from . import test, dc, kube, hub, ci
 
 
-COLLECTIONS = [test, dc, kube, hub]
+COLLECTIONS = [test, dc, kube, hub, ci]
 
 ns = Collection()
 for c in COLLECTIONS:
@@ -18,11 +18,14 @@ ns.configure(dict(
     repo='docker-couchdb',
     pwd=os.getcwd(),
     docker=dict(
-        user=os.getenv('DOCKER_USER'),
+        user=os.getenv('DOCKER_USER', 'joeblackwaslike'),
         org=os.getenv('DOCKER_ORG', os.getenv('DOCKER_USER', 'telephoneorg')),
         name='couchdb',
-        tag='%s/%s:latest' % (
-            os.getenv('DOCKER_ORG', os.getenv('DOCKER_USER', 'telephoneorg')), 'couchdb'
+        tag=os.getenv('DOCKER_TAG', os.getenv('TRAVIS_COMMIT', 'latest'))[:7],
+        image='{}/{}:{}'.format(
+            os.getenv('DOCKER_ORG', os.getenv('DOCKER_USER', 'telephoneorg')),
+            'couchdb',
+            os.getenv('DOCKER_TAG', os.getenv('TRAVIS_COMMIT', 'latest'))[:7]
         ),
         shell='bash'
     ),
@@ -33,6 +36,7 @@ ns.configure(dict(
         images=['couchdb']
     )
 ))
+
 
 @task
 def templates(ctx):

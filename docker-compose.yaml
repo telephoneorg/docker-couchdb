@@ -1,4 +1,4 @@
-version: '2.2'
+version: '2.3'
 services:
   couchdb:
     container_name: couchdb
@@ -8,7 +8,7 @@ services:
       args:
         COUCHDB_VERSION: 2.1.0
         COUCHDB_ADMIN_VERSION: 0.1.0
-    image: ${DOCKER_ORG:-telephoneorg}/couchdb:${DOCKER_TAG:-latest}
+    image: telephoneorg/couchdb:${DOCKER_TAG:-latest}
     environment:
       COUCHDB_DEV_INIT: 'true'
       COUCHDB_ADMIN_USER: admin

@@ -47,17 +47,29 @@ file:
       - "0775"
       - "0755"
     size:
-      gt: 1900
+      gt: 1000
     owner: root
     group: root
     filetype: file
   /volumes/couchdb/data:
     exists: true
+    mode: "0777"
+    owner: couchdb
+    group: couchdb
+    filetype: directory
+  /volumes/couchdb/data/indexes:
+    exists: true
     mode: "0755"
     owner: couchdb
     group: couchdb
     filetype: directory
-  /volumes/couchdb/dumps:
+  /config:
+    exists: true
+    mode: "0777"
+    owner: couchdb
+    group: couchdb
+    filetype: directory
+  /volumes/couchdb/backups:
     exists: true
     mode: "0777"
     owner: couchdb

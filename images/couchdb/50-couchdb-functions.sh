@@ -174,6 +174,11 @@ function couch::is-up {
     couch::_curl > /dev/null 2>&1  --fail
 }
 
+function couch::health-check {
+    local uri='/_up'
+    couch::_curl
+}
+
 function couch::system-dbs-exist {
     local uri='/_users'
     couch::_curl | couch::_parse_db_test | couch::_return-silent

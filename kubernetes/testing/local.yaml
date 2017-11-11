@@ -11,8 +11,8 @@ metadata:
     environment: testing
 type: Opaque
 data:
-  couchdb.user: Y29sbGFib3JhdGU=
-  couchdb.pass: RVZCNklCQVhWMTlUWEtlQWZ4dWRUQkk0RVk3dzljaWk=
+  user: Y29sbGFib3JhdGU=
+  pass: RVZCNklCQVhWMTlUWEtlQWZ4dWRUQkk0RVk3dzljaWk=
 ---
 apiVersion: v1
 kind: Secret
@@ -24,7 +24,7 @@ metadata:
     environment: testing
 type: Opaque
 data:
-  erlang.cookie: WlgyZVA4Umo4cnVmUjVJbjNnWGV1akhYNllseEREbnRyd3ZROE5kcGd3OXFOQjZ5UFhPUWhxNFF4bEc0WnZaQQ==
+  cookie: WlgyZVA4Umo4cnVmUjVJbjNnWGV1akhYNllseEREbnRyd3ZROE5kcGd3OXFOQjZ5UFhPUWhxNFF4bEc0WnZaQQ==
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -44,21 +44,21 @@ data:
 
     [couchdb]
     database_dir = {{ config.get('couchdb.data-dir', '/volumes/couchdb/data') }}
-    view_index_dir = {{ config.get('couchdb.data-dir', '/volumes/couchdb/data') }}
+    view_index_dir = {{ config.get('couchdb.data-dir', '/volumes/couchdb/data/index') }}
 
     [chttpd]
-    require_valid_user = {{ config.get('couchdb.require-valid-user', 'true') }}
+    require_valid_user = false
     port = {{ config.get('couchdb.port', '5984') }}
     bind_address = 0.0.0.0
 
     [httpd]
-    require_valid_user = {{ config.get('couchdb.require-valid-user', 'true') }}
+    require_valid_user = false
     port = {{ config.get('couchdb.port', '5986') }}
     bind_address = 0.0.0.0
 
     [cluster]
     q = {{ config.get('couchdb.shards', '3') }}
-    n = {{ config.get('couchdb.replicas', '1') }}
+    n = {{ config.get('couchdb.replicas', '2') }}
     r = {{ config.get('couchdb.read-quorum', '1') }}
     w = {{ config.get('couchdb.write-quorum', '1') }}
 
@@ -87,8 +87,11 @@ data:
     # Use kernel poll functionality if supported by emulator
     +K true
 
+    # Maximum number of processes
+    +P {{ env.get('ERLANG_PROCESSES', 2048) }}
+
     # Start a pool of asynchronous IO threads
-    +A {{ config.get('erlang.threads', '25') }}
+    +A {{ env.get('ERLANG_THREADS', 32) }}
 
     # Turn off the kernel error_logger
     -kernel error_logger silent
@@ -110,9 +113,7 @@ metadata:
     environment: testing
 data:
   erlang.hostname: long
-  erlang.threads: '25'
   couchdb.log.level: info
-  couchdb.require-valid-user: 'false'
   couchdb.shards: '4'
   couchdb.replicas: '3'
   couchdb.read-quorum: '1'
@@ -191,6 +192,12 @@ metadata:
 spec:
   serviceName: couchdb
   replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5
   template:
     metadata:
       labels:
@@ -222,17 +229,17 @@ spec:
           valueFrom:
             secretKeyRef:
               name: couchdb
-              key: couchdb.user
+              key: user
         - name: COUCHDB_ADMIN_PASS
           valueFrom:
             secretKeyRef:
               name: couchdb
-              key: couchdb.pass
+              key: pass
         - name: ERLANG_COOKIE
           valueFrom:
             secretKeyRef:
               name: erlang
-              key: erlang.cookie
+              key: cookie
         ports:
         - name: data
           containerPort: 5984

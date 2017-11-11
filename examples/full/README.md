@@ -20,8 +20,7 @@ There are four parts to this example:
     * Provides a load balanced ClusterIP for the couchdb service.
 5. `couchdb-statefulset.yaml`
     * The StatefulSet that manages the kubernetes pods.
-6. `couchdb-statefulset.yaml`
-    * The StatefulSet that manages the kubernetes pods.
+
 
 
 ### Usage Example
@@ -32,7 +31,7 @@ kubectl create secret generic erlang --from-literal=erlang.cookie=$(LC_ALL=C tr 
 
 couchdb credentials:
 ```bash
-kubectl create secret generic couchdb --from-literal=couchdb.user=$(sed $(perl -e "print int rand(99999)")"q;d" /usr/share/dict/words) --from-literal=couchdb.pass=$(LC_ALL=C tr -cd '[:alnum:]' < /dev/urandom | head -c 32)
+kubectl create secret generic couchdb --from-literal=user=$(sed $(perl -e "print int rand(99999)")"q;d" /usr/share/dict/words) --from-literal=pass=$(LC_ALL=C tr -cd '[:alnum:]' < /dev/urandom | head -c 32)
 ```
 
 Deploy couchdb:

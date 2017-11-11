@@ -30,15 +30,18 @@ COPY    couchdb.limits.conf /etc/security/limits.d/
 COPY    entrypoint /
 COPY    goss /goss
 
-ENV     ERL_MAX_PORTS 8192
-ENV     ERLANG_PROCESSES 134217727
+# ENV     ERL_MAX_PORTS
+# ENV     ERLANG_PROCESSES
 ENV     COUCHDB_LOG_LEVEL info
 
-ENV     COUCHDB_DEV_INIT=true
+ENV     COUCHDB_DEV_INIT=false
 
 EXPOSE  5984 5986
 
-VOLUME  ["/volumes/couchdb/data", "/config"]
+VOLUME  ["/volumes/couchdb/data", \
+         "/volumes/couchdb/data/indexes", \
+         "/volumes/couchdb/backups", \
+         "/config"]
 
 WORKDIR $HOME
 
