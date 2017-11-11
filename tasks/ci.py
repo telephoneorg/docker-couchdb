@@ -9,7 +9,7 @@ def image_name(ctx, tag):
 @task(default=True)
 def tag_build(ctx):
     current_image = ctx.docker['image']
-    build_tag = image_name(
+    build_image = image_name(
         ctx, 'travis-{}'.format(os.getenv('TRAVIS_BUILD_NUMBER', '0')))
 
-    ctx.run('docker tag {src} {dst}').format(src=current_tag, dst=build_tag)
+    ctx.run('docker tag {} {}').format(current_image, build_image)
