@@ -1,5 +1,3 @@
-import os
-
 from invoke import task, call
 
 
@@ -9,9 +7,6 @@ DOCKER_COMPOSE_DEFAULTS = dict(
     down=['volumes']
 )
 
-def update_env(ctx)
-    os.environ.update(dict(DOCKER_TAG=ctx.docker['tag']))
-
 
 def flags_to_arg_string(flags):
     return ' '.join(['--{}'.format(flag) for flag in flags])
@@ -19,7 +14,6 @@ def flags_to_arg_string(flags):
 
 @task(default=True)
 def up(ctx, d=False):
-    update_env(ctx)
     flags = []
     if d:
         flags.append('-d')
@@ -34,20 +28,17 @@ def launch(ctx):
 
 @task
 def down(ctx, flags=None):
-    update_env(ctx)
     flags = DOCKER_COMPOSE_DEFAULTS['down'] + (flags or [])
     ctx.run('docker-compose {} {}'.format('down', flags_to_arg_string(flags)))
 
 
 @task(pre=[down])
 def rmf(ctx):
-    update_env(ctx)
     ctx.run('docker-compose {} {}'.format('rm', '-v'))
 
 
 @task
 def build(ctx, rc=False):
-    update_env(ctx)
     cmd = ['docker-compose']
     if rc:
         cmd.append('-f docker-compose-rc-test.yaml')
@@ -62,14 +53,12 @@ def rebuild(ctx):
 
 @task
 def logs(ctx, follow=True):
-    update_env(ctx)
     flags = '-f' if follow else ''
     ctx.run('docker-compose {} {}'.format('logs', flags))
 
 
 @task
 def shell(ctx, service=None, sh=None):
-    update_env(ctx)
     service = service or ctx.docker.name
     sh = sh or ctx.docker.shell
     ctx.run('docker exec -ti {} {}'.format(service, sh), pty=True)

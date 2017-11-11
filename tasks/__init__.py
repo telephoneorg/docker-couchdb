@@ -7,13 +7,7 @@ from . import test, dc, kube, hub, ci
 
 
 COLLECTIONS = [test, dc, kube, hub, ci]
-
-ns = Collection()
-for c in COLLECTIONS:
-    ns.add_collection(c)
-
-
-ns.configure(dict(
+CONFIG = dict(
     project='couchdb',
     repo='docker-couchdb',
     pwd=os.getcwd(),
@@ -35,7 +29,16 @@ ns.configure(dict(
     hub=dict(
         images=['couchdb']
     )
-))
+)
+
+os.environ.update(dict(DOCKER_TAG=CONFIG['docker']['tag']))
+
+
+ns = Collection()
+for c in COLLECTIONS:
+    ns.add_collection(c)
+
+ns.configure(CONFIG)
 
 
 @task
