@@ -10,5 +10,6 @@ docker run -it --rm \
     -v /var/run/docker.sock:/var/run/docker.sock \
     -v $TESTDIR:/repo \
     -v /tmp:/tmp \
+    -e DOCKER_TAG \
     $IMAGE \
     dcgoss $COMMAND "$@"
