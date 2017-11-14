@@ -174,3 +174,4 @@ docker-compose build \
     --build-arg COUCHDB_RC=1 \
     --build-arg COUCHDB_CHECK_RELEASE=true
 ```
+ 
