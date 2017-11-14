@@ -1,6 +1,3 @@
-# create creds:          kubectl create secret generic couchdb --from-literal=couchdb.user=$(sed $(perl -e "print int rand(99999)")"q;d" /usr/share/dict/words) --from-literal=couchdb.pass=$(LC_ALL=C tr -cd '[:alnum:]' < /dev/urandom | head -c 32)
-# create erlang cookie:  kubectl create secret generic erlang --from-literal=erlang.cookie=$(LC_ALL=C tr -cd '[:alnum:]' < /dev/urandom | head -c 64)
-
 apiVersion: v1
 kind: Secret
 metadata:
@@ -29,6 +26,23 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  name: couchdb
+  labels:
+    app: couchdb
+    test: 'true'
+    environment: testing
+data:
+  erlang.hostname: long
+  couchdb.log.level: warn
+  couchdb.shards: '4'
+  couchdb.replicas: '3'
+  couchdb.read-quorum: '1'
+  couchdb.write-quorum: '2'
+  couchdiscover.log.level: info
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
   name: couchdb-templates
   labels:
     app: couchdb
@@ -41,84 +55,59 @@ data:
     ---
     {% set config_map = env.get('CONFIG_MAP', 'couchdb') %}
     {% set config = kube.get('configmap', config_map).data -%}
-
+    
     [couchdb]
     database_dir = {{ config.get('couchdb.data-dir', '/volumes/couchdb/data') }}
     view_index_dir = {{ config.get('couchdb.data-dir', '/volumes/couchdb/data/index') }}
-
+    
     [chttpd]
     require_valid_user = false
     port = {{ config.get('couchdb.port', '5984') }}
     bind_address = 0.0.0.0
-
+    
     [httpd]
     require_valid_user = false
     port = {{ config.get('couchdb.port', '5986') }}
     bind_address = 0.0.0.0
-
+    
     [cluster]
     q = {{ config.get('couchdb.shards', '3') }}
     n = {{ config.get('couchdb.replicas', '2') }}
     r = {{ config.get('couchdb.read-quorum', '1') }}
     w = {{ config.get('couchdb.write-quorum', '1') }}
-
+    
     [couch_httpd_auth]
     iterations = 1000
-
+    
     [log]
     level = {{ config.get('couchdb.log.level', 'info').lower() }}
+
   vm.args.j2: |
     ---
     target: /config/vm.args
     ---
     {% set config_map = env.get('CONFIG_MAP', 'couchdb') %}
     {% set config = kube.get('configmap', config_map).data -%}
-
-    # Turn off the sasl error logger
+    
     -sasl sasl_error_logger false
-
-    # Use the following erlang hostname
+    
     {% if config.get('erlang.hostname') == 'long' %}
     -name couchdb
     {% else %}
     -sname couchdb
     {% endif %}
-
-    # Use kernel poll functionality if supported by emulator
+    
     +K true
-
-    # Maximum number of processes
+    
     +P {{ env.get('ERLANG_PROCESSES', 2048) }}
-
-    # Start a pool of asynchronous IO threads
+    
     +A {{ env.get('ERLANG_THREADS', 32) }}
-
-    # Turn off the kernel error_logger
+    
     -kernel error_logger silent
-
-    # Set erlang distribution to use 11500-11999 ports instead of random
-    # predictibility has value here
+    
     -kernel inet_dist_listen_min 11500 inet_dist_listen_max 11999
-
-    # Comment this line out if you want the Erlang shell
+    
     +Bd -noinput
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: couchdb
-  labels:
-    app: couchdb
-    test: 'true'
-    environment: testing
-data:
-  erlang.hostname: long
-  couchdb.log.level: info
-  couchdb.shards: '4'
-  couchdb.replicas: '3'
-  couchdb.read-quorum: '1'
-  couchdb.write-quorum: '2'
-  couchdiscover.log.level: info
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -191,7 +180,7 @@ metadata:
     environment: testing
 spec:
   serviceName: couchdb
-  replicas: 2
+  replicas: 3
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -209,6 +198,7 @@ spec:
       initContainers:
       - name: config
         image: telephoneorg/tmpld
+        imagePullPolicy: IfNotPresent
         args:
         - tmpld /templates/*.j2
         volumeMounts:
@@ -219,6 +209,7 @@ spec:
       containers:
       - name: couchdb
         image: telephoneorg/couchdb:latest
+        imagePullPolicy: IfNotPresent
         env:
         - name: ERLANG_HOSTNAME
           valueFrom:

@@ -8,11 +8,6 @@ python:
 services: docker
 env:
   global:
-  # - DOCKER_TAG=2.1.1
-  - GITHUB_USER=joeblackwaslike
-  - GITHUB_ORG=telephoneorg
-  - DOCKER_USER=joeblackwaslike
-  - DOCKER_ORG=telephoneorg
   # DOCKER_PASS
   - secure: "MYqoK/u9eYftQQK8jWRO2GJSnHN6E0imRtg2f5JYp2PTGfEp64b2bI0ISe0BoanZdylgoysqkdOOxWWETAAV9IO4OHgP+LhARvWhDoVRXmy04IXM7Ha5R07rmvT5jLdJJuPQyXu4Y8nEWKjsZrNwhOnR4/NEuIdazxP9ZsjFGuFrb1xvip9H5LEF/8oN14wUvb1+WQ+OBZay51NTk7Amu4Q19mnpNIPMCcusxJNMwo1r86Z6o+OkBD53t9TELusRytuehbb58vN5/ULArmQ2nrtyo0UqwBhtw7EtGAr+EIpPjCjhLVqgJLyaAM583eJkGooPeHAjk4OFz75cpsnJwK5oL7EmOLq0C3trqHX3HFe8oKWnwxVhOe+1NP3AQijmA1EdgCAS9yGhRg7hRR7LtRB50aGdwJyIBLUF34APCu0YU7ED6NKjsnI8FIzMLu6QvDcT4cGypPJmq7u6HLHu8UAs/8/KF0QOep/AK99b8jOmhWpMSzMkp3Dg3uHPlGh0N4X9UFvgdY2goEhVcP2W5FygOpDXgq7yd7jtJglBnhlXgnpWk+LiWVW4+l7l/bMEhFzNG7WivKAFpZ9VRrk917owdvDd5UJG+NiHd2/1Xcg+eieEXqx5scxElOSzM8lmS+Rn+0g/FI3tHJhCBvwh8TnTxGenKr4ognLqXo+gVS4="
 
@@ -26,10 +21,7 @@ notifications:
     on_success: always
     on_failure: always
 
-before_install:
-# - source scripts/ci/environment.sh
-- pip install --upgrade docker-compose
-- pip install invoke
+before_install: pip install --upgrade docker-compose invoke
 
 install: inv dc.build
 script: inv test

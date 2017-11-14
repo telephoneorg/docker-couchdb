@@ -6,7 +6,7 @@ metadata:
     app: couchdb
 data:
   erlang.hostname: long
-  couchdb.log.level: info
+  couchdb.log.level: warn
   couchdb.shards: '4'
   couchdb.replicas: '3'
   couchdb.read-quorum: '1'

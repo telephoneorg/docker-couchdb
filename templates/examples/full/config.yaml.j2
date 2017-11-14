@@ -1,0 +1,14 @@
+---
+target: examples/full/config.yaml
+---
+
+{%- set vars = data['vars'] -%}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: couchdb
+  labels:
+    app: couchdb
+data:
+  {{ file('../../includes/config-data.yaml.inc')|indent(2) }}

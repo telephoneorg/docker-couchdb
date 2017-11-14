@@ -21,7 +21,7 @@ def get_docker_tag_ci():
         if travis_tag == travis_branch:
             return travis_tag
         else:
-            return travis_commit[:7]
+            return travis_commit[:6]
 
 
 def image_name(ctx, tag):

@@ -6,7 +6,7 @@ services:
     build:
       context: images/couchdb
       args:
-        COUCHDB_VERSION: 2.1.0
+        COUCHDB_VERSION: 2.1.1
         COUCHDB_ADMIN_VERSION: 0.1.0
     image: telephoneorg/couchdb:${DOCKER_TAG:-latest}
     environment:

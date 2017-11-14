@@ -1,0 +1,24 @@
+---
+target: kubernetes/production/service-balanced.yaml
+---
+
+{%- set vars = data['vars'] -%}
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: couchdb-lb
+  labels:
+    app: couchdb
+    project: {{ vars['project'] }}
+    environment: {{ vars['environment'] }}
+spec:
+  selector:
+    app: couchdb
+    project: {{ vars['project'] }}
+    environment: {{ vars['environment'] }}
+  ports:
+  - name: data
+    port: 5984
+  - name: admin
+    port: 5986

@@ -1,13 +1,12 @@
 import os
-import glob
 
 from invoke import Collection, task
 
-from . import test, dc, kube, hub, ci, util
+from . import admin, ci, dc, hub, kube, test, tmpl, util
 
 
-COLLECTIONS = [test, dc, kube, hub, ci]
 CONFIG = dict(
+    modules=[admin, ci, dc, hub, kube, test, tmpl],
     project='couchdb',
     repo='docker-couchdb',
     pwd=os.getcwd(),
@@ -21,26 +20,35 @@ CONFIG = dict(
         ),
         shell='bash'
     ),
+    dc=dict(
+        files=['docker-compose.yaml'],
+        defaults=dict(
+            up=['abort-on-container-exit', 'no-build'],
+            down=['volumes']
+        )
+    ),
+    test=dict(
+        image='telephoneorg/dcgoss:latest'
+    ),
     kube=dict(
         environment='testing'
     ),
     hub=dict(
         images=['couchdb']
+    ),
+    admin=dict(
+        url='http://127.0.0.1:5984/_utils/'
+    ),
+    tmpl=dict(
+        glob='templates/**/*.j2',
+        values=['vars.yaml']
     )
 )
 
 util.export_docker_tag()
 
 ns = Collection()
-for c in COLLECTIONS:
+for c in CONFIG['modules']:
     ns.add_collection(c)
 
 ns.configure(CONFIG)
-
-
-@task
-def templates(ctx):
-    files = ' '.join(glob.iglob('templates/**.j2', recursive=True))
-    ctx.run('tmpld --strict --data templates/vars.yaml {}'.format(files))
-
-ns.add_task(templates)

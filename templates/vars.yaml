@@ -1,11 +1,12 @@
-name: docker-couchdb
-heading:
-description:
-github:
-  user: joeblackwaslike
-  org: telephoneorg
-  repo: docker-couchdb
-docker:
-  user: joeblackwaslike
-  org: telephoneorg
-  repo: couchdb
+name: couchdb
+project: telephoneorg
+environment: production
+images:
+  couchdb: telephoneorg/couchdb:latest
+  tmpld: telephoneorg/tmpld
+  goss: telephoneorg/goss
+  couchdiscover: telephoneorg/couchdiscover
+replicas: 3
+volumes:
+  data:
+    storage: 100Gi

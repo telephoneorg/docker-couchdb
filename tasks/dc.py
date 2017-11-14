@@ -3,13 +3,6 @@ from invoke import task, call
 from . import util
 
 
-DOCKER_COMPOSE_FILES = ['docker-compose.yaml']
-DOCKER_COMPOSE_DEFAULTS = dict(
-    up=['abort-on-container-exit', 'no-build'],
-    down=['volumes']
-)
-
-
 @task(default=True)
 def up(ctx, d=False):
     flags = []
@@ -26,8 +19,9 @@ def launch(ctx):
 
 @task
 def down(ctx, flags=None):
-    flags = DOCKER_COMPOSE_DEFAULTS['down'] + (flags or [])
-    ctx.run('docker-compose {} {}'.format('down', util.flags_to_arg_string(flags)))
+    flags = ctx['dc']['defaults']['down'] + (flags or [])
+    ctx.run('docker-compose {} {}'.format(
+        'down', util.flags_to_arg_string(flags)))
 
 
 @task(pre=[down])
@@ -36,11 +30,8 @@ def rmf(ctx):
 
 
 @task
-def build(ctx, rc=False):
-    cmd = ['docker-compose']
-    if rc:
-        cmd.append('-f docker-compose-rc-test.yaml')
-    cmd.append('build')
+def build(ctx):
+    cmd = ['docker-compose', 'build']
     ctx.run(' '.join(cmd))
 
 
@@ -56,13 +47,7 @@ def logs(ctx, follow=True):
 
 
 @task
-def shell(ctx, service=None, sh=None):
-    service = service or ctx.docker.name
-    sh = sh or ctx.docker.shell
+def shell(ctx, service=None, shell=None):
+    service = service or ctx.docker['name']
+    shell = shell or ctx.docker['shell']
     ctx.run('docker exec -ti {} {}'.format(service, sh), pty=True)
-
-
-@task
-def open(ctx, url=None):
-    url = url or 'http://127.0.0.1:5984/_utils/'
-    ctx.run('open {}'.format(url))

@@ -1,9 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: couchdb-bal
-  annotations:
-    service.alpha.kubernetes.io/tolerate-unready-endpoints: 'true'
+  name: couchdb-lb
 spec:
   selector:
     app: couchdb

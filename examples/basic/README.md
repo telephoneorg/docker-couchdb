@@ -2,7 +2,7 @@
 ## minimal example
 A minimal example of deploying CouchDB 2.x with the `couchdiscover` sidecar in Kubernetes.
 
-Keep in mind that this example doesn't use persistent volumes, dynamic volume provisioning, and doesn't create a load balanced service such as in the full example.
+**NOTE:** *Keep in mind that this example doesn't use persistent volumes, dynamic volume provisioning, and doesn't create a load balanced service such as in the full example.*
 
 
 ## Requirements
@@ -10,15 +10,13 @@ Keep in mind that this example doesn't use persistent volumes, dynamic volume pr
 
 
 ## Usage
-There are two parts to this example:
-1. `couchdb-headless-service.yaml`
-    * The headless Service that provides service discovery.
-    * *Required for proper dns resolution*
-2. `couchdb-statefulset.yaml`
-    * The StatefulSet that manages the Kubernetes pods.
+There are two files in this example:
+1. `service.yaml`: headless Service that provides service discovery. *Required for proper service/peer discovery*
+2. `statefulset.yaml`: statefulset that manages the kubernetes pods
 
 
 ### Usage Example
+Deploy couchdb:
 ```bash
-kubectl create -f examples/basic
+kubectl create -f .
 ```

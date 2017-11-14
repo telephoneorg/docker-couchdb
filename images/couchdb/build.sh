@@ -39,10 +39,12 @@ pushd $_
     curl -SL -O \
         $COUCHDB_DOWNLOAD_URL && \
         gpg --no-tty --verify <(curl -s ${COUCHDB_DOWNLOAD_URL}.asc) apache-couchdb-*.tar.gz && \
-        sha256sum --check <(curl -s ${COUCHDB_DOWNLOAD_URL}.sha256 | sed 's/SHA-256/SHA256/' | sed 's/\.2/-2/' | tr -d '\r') --status && \
-        tar xzvf apache-couchdb-*.tar.gz --strip-components=1 -C .
+        sha256sum --check <(curl -s ${COUCHDB_DOWNLOAD_URL}.sha256 | sed 's/SHA-256/SHA256/' | sed 's/\.2/-2/' | tr -d '\r') --status
+        tar xzvf apache-couchdb-*.tar.gz --strip-components=1
 
         log::m-info "Compiling $APP ..."
+        ls -la
+        pwd
         ./configure --user $USER --disable-docs
 
     # ref https://cwiki.apache.org/confluence/display/COUCHDB/Testing+a+Source+Release

@@ -15,9 +15,9 @@ This image also includes the couchdb-admin utility from https://github.com/cabif
 
 ## Build Environment
 Build environment variables are often used in the build script to bump version numbers and set other options during the docker build phase.  Their values can be overridden using a build argument of the same name.
-* `COUCHDB_VERSION`: the version of couchdb to install. Defaults to `2.1.0`.
-* `COUCHDB_RC`: the release candidate number (if applicable). No default.
-* `COUCHDB_CHECK_RELEASE`: Determines whether `make check` will run before `make release`, boolean. Defaults to `false`.
+* `COUCHDB_VERSION`: the version of couchdb to install.
+* `COUCHDB_RC`: the release candidate number (if applicable).
+* `COUCHDB_CHECK_RELEASE`: Determines whether `make check` will run before `make release`, boolean.
 
 
 The following variables are standard in most of our dockerfiles to reduce duplication and make scripts reusable among different projects:
@@ -30,20 +30,19 @@ The following variables are standard in most of our dockerfiles to reduce duplic
 Run environment variables are used in the entrypoint script to render configuration templates, perform flow control, etc.  These values can be overridden when inheriting from the base dockerfile, specified during `docker run`, or in kubernetes manifests in the `env` array.
 
 #### couchdb container:
-* `ERLANG_THREADS`: used as the value for the `+A` argument in `vm.args`.  Defaults to `25`.
-* `COUCHDB_LOG_LEVEL`: lowercased and used as the value for the level in the `log` section of `local.ini`.  Defaults to `info`.
-* `COUCHDB_DATA_PATH`: used as the value for `database_dir` and `view_index_dir` in the `couchdb` section of `local.ini`.  Defaults to `/data/$APP`.
-* `COUCHDB_BIND_ADDR`: used as the value for `bind_address` in the `chttpd` and `httpd` sections of `local.ini`.  Defaults to `0.0.0.0`.
-* `COUCHDB_REQUIRE_VALID_USER`: used as the value for `require_valid_user` in the `chttpd` and `httpd` sections of `local.ini`.  Defaults to `false`.
-* `COUCHDB_SHARDS`: used as the value for `q` in the `cluster` section of `local.ini`.  Defaults to `4`.
-* `COUCHDB_READ_QUORUM`: used as the value for `r` in the `cluster` section of `local.ini`.  Defaults to `1`.
-* `COUCHDB_WRITE_QUORUM`: used as the value for `w` in the `cluster` section of `local.ini`.  Defaults to `1`.
-* `COUCHDB_REPLICAS`: used as the value for `n` in the `cluster` section of `local.ini`.  Defaults to `1`.
-* `COUCHDB_DEV_INIT`: when value is `true`, will background the couchdb-dev script before starting couchdb.  Inject as true into the environment when running a simple single node dev cluster that should immediately auto-initialize.  Defaults to `false`.
+* `ERLANG_THREADS`: used as the value for the `+A` argument in `vm.args`.
+* `COUCHDB_LOG_LEVEL`: lowercased and used as the value for the level in the `log` section of `local.ini`.
+* `COUCHDB_DATA_PATH`: used as the value for `database_dir` and `view_index_dir` in the `couchdb` section of `local.ini`.
+* `COUCHDB_BIND_ADDR`: used as the value for `bind_address` in the `chttpd` and `httpd` sections of `local.ini`.
+* `COUCHDB_REQUIRE_VALID_USER`: used as the value for `require_valid_user` in the `chttpd` and `httpd` sections of `local.ini`.
+* `COUCHDB_SHARDS`: used as the value for `q` in the `cluster` section of `local.ini`.
+* `COUCHDB_READ_QUORUM`: used as the value for `r` in the `cluster` section of `local.ini`.
+* `COUCHDB_WRITE_QUORUM`: used as the value for `w` in the `cluster` section of `local.ini`.
+* `COUCHDB_REPLICAS`: used as the value for `n` in the `cluster` section of `local.ini`.
+* `COUCHDB_DEV_INIT`: when value is `true`, will background the couchdb-dev script before starting couchdb.  Inject as true into the environment when running a simple single node dev cluster that should immediately auto-initialize.
 * `COUCHDB_ADMIN_USER`,`COUCHDB_ADMIN_PASS`: when set this will be available to the sidecar container `couchdiscover` and the script `couch-helper`. Your cluster will be auto initialized using these credentials. `couch-helper` is meant to be used for local single node clusters for development.
 * `ERLANG_COOKIE`: when set this value will be written to ~/.erlang.cookie and proper permissions applied prior to starting couchdb.
 * `COUCHDB_CLUSTER_SIZE`: when set this value override the value of the replica's field on the kubernetes statefulset manifest. Do not use unless you really need to override the default behavior for some reason.
-
 
 #### couchdiscover container:
 * `LOG_LEVEL`: logging level to output container logs for.  Defaults to `INFO`, most logs are either INFO or WARNING level.
@@ -96,14 +95,14 @@ Edit the manifests under `kubernetes/<environment>` to reflect your specific env
 Create a secret for the erlang cookie:
 ```bash
 kubectl create secret generic erlang \      
-    --from-literal=erlang.cookie=$(LC_ALL=C tr -cd '[:alnum:]' < /dev/urandom | head -c 64)
+    --from-literal=erlang=$(LC_ALL=C tr -cd '[:alnum:]' < /dev/urandom | head -c 64)
 ```
 
 Create a secret for the couchdb credentials:
 ```bash
 kubectl create secret generic couchdb \
-    --from-literal=couchdb.user=$(sed $(perl -e "print int rand(99999)")"q;d" /usr/share/dict/words) \
-    --from-literal=couchdb.pass=$(LC_ALL=C tr -cd '[:alnum:]' < /dev/urandom | head -c 32)
+    --from-literal=user=$(sed $(perl -e "print int rand(99999)")"q;d" /usr/share/dict/words) \
+    --from-literal=pass=$(LC_ALL=C tr -cd '[:alnum:]' < /dev/urandom | head -c 32)
 ```
 
 Deploy couchdb:
@@ -156,7 +155,7 @@ def run(self):
 ```
 
 
-## Building and testing release candidates
+## Building and testing release candidates for CouchDB
 **Note:** Check the Build Environment Section at the top for a summary of the build arguments used here.  The command given is just an example, change it as necessary.
 
 ### Build only

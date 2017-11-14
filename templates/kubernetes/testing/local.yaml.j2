@@ -1,7 +1,115 @@
+---
+target: kubernetes/testing/local.yaml
+---
+
+{%- set vars = data['vars'] -%}
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: couchdb
+  labels:
+    app: couchdb
+    test: 'true'
+    environment: testing
+type: Opaque
+data:
+  user: Y29sbGFib3JhdGU=
+  pass: RVZCNklCQVhWMTlUWEtlQWZ4dWRUQkk0RVk3dzljaWk=
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: erlang
+  labels:
+    app: couchdb
+    test: 'true'
+    environment: testing
+type: Opaque
+data:
+  cookie: WlgyZVA4Umo4cnVmUjVJbjNnWGV1akhYNllseEREbnRyd3ZROE5kcGd3OXFOQjZ5UFhPUWhxNFF4bEc0WnZaQQ==
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: couchdb
+  labels:
+    app: couchdb
+    test: 'true'
+    environment: testing
+data:
+  {{ file('../../includes/config-data.yaml.inc')|indent(2) }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: couchdb-templates
+  labels:
+    app: couchdb
+    test: 'true'
+    environment: testing
+data:
+  local.ini.j2: |
+    {{ file('../../includes/local.ini.inc')|indent(4) }}
+
+  vm.args.j2: |
+    {{ file('../../includes/vm.args.inc')|indent(4) }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: couchdb-healthz
+data:
+  liveness.yaml: |
+    {{ file('../../includes/goss_wait.yaml.inc')|indent(4) }}
+  readiness.yaml: |
+    {{ file('../../includes/goss_wait.yaml.inc')|indent(4) }}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: couchdb
+  labels:
+    app: couchdb
+    test: 'true'
+    environment: testing
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: 'true'
+spec:
+  clusterIP: None
+  selector:
+    app: couchdb
+  ports:
+  - name: data
+    port: 5984
+  - name: admin
+    port: 5986
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: couchdb-lb
+  labels:
+    app: couchdb
+    test: 'true'
+    environment: testing
+spec:
+  selector:
+    app: couchdb
+  ports:
+  - name: data
+    port: 5984
+  - name: admin
+    port: 5986
+---
 apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
   name: couchdb
+  labels:
+    app: couchdb
+    test: 'true'
+    environment: testing
 spec:
   serviceName: couchdb
   replicas: 3
@@ -15,11 +123,13 @@ spec:
     metadata:
       labels:
         app: couchdb
+        test: 'true'
+        environment: testing
     spec:
-      terminationGracePeriodSeconds: 30
+      terminationGracePeriodSeconds: 0
       initContainers:
       - name: config
-        image: telephoneorg/tmpld
+        image: {{ vars['images']['tmpld'] }}
         imagePullPolicy: IfNotPresent
         args:
         - tmpld /templates/*.j2
@@ -30,7 +140,8 @@ spec:
           mountPath: /config
       containers:
       - name: couchdb
-        image: telephoneorg/couchdb:latest
+        image: {{ vars['images']['couchdb'] }}
+        imagePullPolicy: IfNotPresent
         env:
         - name: ERLANG_HOSTNAME
           valueFrom:
@@ -41,29 +152,22 @@ spec:
           valueFrom:
             secretKeyRef:
               name: couchdb
-              key: couchdb.user
+              key: user
         - name: COUCHDB_ADMIN_PASS
           valueFrom:
             secretKeyRef:
               name: couchdb
-              key: couchdb.pass
+              key: pass
         - name: ERLANG_COOKIE
           valueFrom:
             secretKeyRef:
               name: erlang
-              key: erlang.cookie
+              key: cookie
         ports:
         - name: data
           containerPort: 5984
         - name: admin
           containerPort: 5986
-        resources:
-          requests:
-            cpu: 1
-            memory: 1Gi
-          limits:
-            cpu: 1
-            memory: 1Gi
         readinessProbe:
           httpGet:
             path: /healthz
@@ -80,11 +184,8 @@ spec:
           timeoutSeconds: 2
           successThreshold: 1
           failureThreshold: 5
-        volumeMounts:
-        - name: couchdb-data
-          mountPath: /volumes/couchdb/data
       - name: healthz-ready
-        image: telephoneorg/goss
+        image: {{ vars['images']['goss'] }}
         imagePullPolicy: IfNotPresent
         command:
         - healthz
@@ -95,7 +196,7 @@ spec:
         - name: healthz
           mountPath: /goss
       - name: healthz-live
-        image: telephoneorg/goss
+        image: {{ vars['images']['goss'] }}
         imagePullPolicy: IfNotPresent
         command:
         - healthz
@@ -107,7 +208,7 @@ spec:
         - name: healthz
           mountPath: /goss
       - name: couchdiscover
-        image: telephoneorg/couchdiscover
+        image: {{ vars['images']['couchdiscover'] }}
         imagePullPolicy: IfNotPresent
         env:
         - name: LOG_LEVEL
@@ -124,13 +225,4 @@ spec:
       - name: healthz
         configMap:
           name: couchdb-healthz
-  volumeClaimTemplates:
-  - metadata:
-      name: couchdb-data
-    spec:
-      accessModes:
-      - ReadWriteOnce
-      resources:
-        requests:
-          storage: 8Gi
       restartPolicy: Always

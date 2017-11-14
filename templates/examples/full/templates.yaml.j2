@@ -1,0 +1,17 @@
+---
+target: examples/full/templates.yaml
+---
+
+{%- set vars = data['vars'] -%}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: couchdb-templates
+  labels:
+    app: couchdb
+data:
+  local.ini.j2: |
+    {{ file('../../includes/local.ini.inc')|indent(4) }}
+  vm.args.j2: |
+    {{ file('../../includes/vm.args.inc')|indent(4) }}

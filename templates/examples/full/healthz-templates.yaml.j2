@@ -1,0 +1,17 @@
+---
+target: examples/full/healthz-templates.yaml
+---
+
+{%- set vars = data['vars'] -%}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: couchdb-healthz
+  labels:
+    app: couchdb
+data:
+  liveness.yaml: |
+    {{ file('../../includes/goss_wait.yaml.inc')|indent(4) }}
+  readiness.yaml: |
+    {{ file('../../includes/goss_wait.yaml.inc')|indent(4) }}

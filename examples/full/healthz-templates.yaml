@@ -2,6 +2,8 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: couchdb-healthz
+  labels:
+    app: couchdb
 data:
   liveness.yaml: |
     http:

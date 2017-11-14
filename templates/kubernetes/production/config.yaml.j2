@@ -1,0 +1,16 @@
+---
+target: kubernetes/production/config.yaml
+---
+
+{%- set vars = data['vars'] -%}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: couchdb
+  labels:
+    app: couchdb
+    project: {{ vars['project'] }}
+    environment: {{ vars['environment'] }}
+data:
+  {{ file('../../includes/config-data.yaml.inc')|indent(2) }}

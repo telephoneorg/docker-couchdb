@@ -1,0 +1,145 @@
+---
+target: kubernetes/production/statefulset.yaml
+---
+
+{%- set vars = data['vars'] -%}
+
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: couchdb
+  labels:
+    app: couchdb
+    project: {{ vars['project'] }}
+    environment: {{ vars['environment'] }}
+spec:
+  serviceName: couchdb
+  replicas: {{ vars['replicas'] }}
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: couchdb
+        project: {{ vars['project'] }}
+        environment: {{ vars['environment'] }}
+    spec:
+      terminationGracePeriodSeconds: 30
+      initContainers:
+      - name: config
+        image: {{ vars['images']['tmpld'] }}
+        imagePullPolicy: IfNotPresent
+        args:
+        - tmpld /templates/*.j2
+        volumeMounts:
+        - name: templates
+          mountPath: /templates
+        - name: config
+          mountPath: /config
+      containers:
+      - name: couchdb
+        image: {{ vars['images']['couchdb'] }}
+        env:
+        - name: ERLANG_HOSTNAME
+          valueFrom:
+            configMapKeyRef:
+              name: couchdb
+              key: erlang.hostname
+        - name: COUCHDB_ADMIN_USER
+          valueFrom:
+            secretKeyRef:
+              name: couchdb
+              key: user
+        - name: COUCHDB_ADMIN_PASS
+          valueFrom:
+            secretKeyRef:
+              name: couchdb
+              key: pass
+        - name: ERLANG_COOKIE
+          valueFrom:
+            secretKeyRef:
+              name: erlang
+              key: cookie
+        ports:
+        - name: data
+          containerPort: 5984
+        - name: admin
+          containerPort: 5986
+        resources:
+          requests:
+            cpu: 3
+            memory: 2Gi
+          limits:
+            cpu: 3
+            memory: 2Gi
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 5
+          timeoutSeconds: 2
+          successThreshold: 1
+          failureThreshold: 5
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          timeoutSeconds: 2
+          successThreshold: 1
+          failureThreshold: 5
+        volumeMounts:
+        - name: couchdb-data
+          mountPath: /volumes/couchdb/data
+        imagePullPolicy: Always
+      - name: healthz-ready
+        image: {{ vars['images']['goss'] }}
+        imagePullPolicy: IfNotPresent
+        command:
+        - healthz
+        ports:
+        - name: healthz-ready
+          containerPort: 8080
+        volumeMounts:
+        - name: healthz
+          mountPath: /goss
+      - name: healthz-live
+        image: {{ vars['images']['goss'] }}
+        imagePullPolicy: IfNotPresent
+        command:
+        - healthz
+        - liveness
+        ports:
+        - name: healthz-live
+          containerPort: 8081
+        volumeMounts:
+        - name: healthz
+          mountPath: /goss
+      - name: couchdiscover
+        image: {{ vars['images']['couchdiscover'] }}
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: couchdb
+              key: couchdiscover.log.level
+      volumes:
+      - name: templates
+        configMap:
+          name: couchdb-templates
+      - name: config
+        emptyDir: {}
+      - name: healthz
+        configMap:
+          name: couchdb-healthz
+      restartPolicy: Always
+  volumeClaimTemplates:
+  - metadata:
+      name: couchdb-data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: {{ vars['volumes']['data']['storage'] }}
