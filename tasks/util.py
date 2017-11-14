@@ -1,4 +1,8 @@
 import os
+from os.path import join, abspath, dirname
+import copy
+
+import yaml
 
 
 def get_docker_tag():
@@ -39,3 +43,70 @@ def get_docker_org():
 
 def flags_to_arg_string(flags):
     return ' '.join(['--{}'.format(flag) for flag in flags])
+
+
+def deepupdate(target, src):
+    target = copy.deepcopy(target)
+
+    for k, v in src.items():
+        if type(v) == list:
+            if not k in target:
+                target[k] = copy.deepcopy(v)
+        elif type(v) == dict:
+            if not k in target:
+                target[k] = copy.deepcopy(v)
+            else:
+                deepupdate(target[k], v)
+        else:
+            if not k in target:
+                target[k] = copy.copy(v)
+    return target
+
+
+def build_config(path='config.yaml'):
+    default_mods = ['admin', 'ci', 'dc', 'hub', 'kube', 'test', 'tmpl']
+    defaults = dict(
+        extras=[],
+        project='',
+        repo='',
+        pwd=os.getcwd(),
+        docker=dict(
+            user=os.getenv('DOCKER_USER', 'joeblackwaslike'),
+            org=get_docker_org(),
+            tag=get_docker_tag(),
+            shell='bash'
+        ),
+        dc=dict(
+            files=['docker-compose.yaml'],
+            defaults=dict(
+                up=['abort-on-container-exit', 'no-build'],
+                down=['volumes']
+            )
+        ),
+        test=dict(
+            image='telephoneorg/dcgoss:latest'
+        ),
+        kube=dict(
+            environment='testing'
+        ),
+        hub=dict(
+            images=['']
+        ),
+        admin=dict(),
+        tmpl=dict(
+            glob='templates/**/*.j2',
+            values=['vars.yaml']
+        )
+    )
+
+    path = join(abspath(dirname(__file__)), path)
+    with open(path) as fd:
+        config = yaml.load(fd)
+
+    config = deepupdate(config, defaults)
+    config['modules'] = list(set(default_mods + config['extras']))
+    config['docker']['name'] = config['project']
+    config['docker']['image'] = '{}/{}:{}'.format(
+        get_docker_org(), config['project'], get_docker_tag()
+    )
+    return config

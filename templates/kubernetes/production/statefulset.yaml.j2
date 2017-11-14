@@ -39,6 +39,7 @@ spec:
       containers:
       - name: couchdb
         image: {{ vars['images']['couchdb'] }}
+        imagePullPolicy: IfNotPresent
         env:
         - name: ERLANG_HOSTNAME
           valueFrom:

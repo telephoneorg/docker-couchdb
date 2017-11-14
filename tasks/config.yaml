@@ -1,0 +1,17 @@
+extras: []
+admin:
+  url: http://127.0.0.1:5984/_utils/
+dc:
+  files:
+  - docker-compose.yaml
+docker:
+  shell: bash
+hub:
+  images:
+  - couchdb
+project: couchdb
+repo: docker-couchdb
+tmpl:
+  glob: templates/**/*.j2
+  values:
+  - vars.yaml

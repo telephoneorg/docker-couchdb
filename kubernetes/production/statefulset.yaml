@@ -32,7 +32,8 @@ spec:
           mountPath: /config
       containers:
       - name: couchdb
-        image: telephoneorg/couchdb:latest
+        image: telephoneorg/couchdb:v2.1.1
+        imagePullPolicy: IfNotPresent
         env:
         - name: ERLANG_HOSTNAME
           valueFrom:

@@ -2,7 +2,7 @@ name: couchdb
 project: telephoneorg
 environment: production
 images:
-  couchdb: telephoneorg/couchdb:latest
+  couchdb: telephoneorg/couchdb:v2.1.1
   tmpld: telephoneorg/tmpld
   goss: telephoneorg/goss
   couchdiscover: telephoneorg/couchdiscover
