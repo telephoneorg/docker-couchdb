@@ -1,15 +1,13 @@
 from invoke import task, call
 
+from . import util
+
 
 DOCKER_COMPOSE_FILES = ['docker-compose.yaml']
 DOCKER_COMPOSE_DEFAULTS = dict(
     up=['abort-on-container-exit', 'no-build'],
     down=['volumes']
 )
-
-
-def flags_to_arg_string(flags):
-    return ' '.join(['--{}'.format(flag) for flag in flags])
 
 
 @task(default=True)
@@ -29,7 +27,7 @@ def launch(ctx):
 @task
 def down(ctx, flags=None):
     flags = DOCKER_COMPOSE_DEFAULTS['down'] + (flags or [])
-    ctx.run('docker-compose {} {}'.format('down', flags_to_arg_string(flags)))
+    ctx.run('docker-compose {} {}'.format('down', util.flags_to_arg_string(flags)))
 
 
 @task(pre=[down])

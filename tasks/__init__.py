@@ -3,7 +3,7 @@ import glob
 
 from invoke import Collection, task
 
-from . import test, dc, kube, hub, ci
+from . import test, dc, kube, hub, ci, util
 
 
 COLLECTIONS = [test, dc, kube, hub, ci]
@@ -13,13 +13,11 @@ CONFIG = dict(
     pwd=os.getcwd(),
     docker=dict(
         user=os.getenv('DOCKER_USER', 'joeblackwaslike'),
-        org=os.getenv('DOCKER_ORG', os.getenv('DOCKER_USER', 'telephoneorg')),
+        org=util.get_docker_org(),
         name='couchdb',
-        tag=os.getenv('DOCKER_TAG', os.getenv('TRAVIS_COMMIT', 'latest'))[:7],
+        tag=util.get_docker_tag(),
         image='{}/{}:{}'.format(
-            os.getenv('DOCKER_ORG', os.getenv('DOCKER_USER', 'telephoneorg')),
-            'couchdb',
-            os.getenv('DOCKER_TAG', os.getenv('TRAVIS_COMMIT', 'latest'))[:7]
+            util.get_docker_org(), 'couchdb', util.get_docker_tag()
         ),
         shell='bash'
     ),
@@ -31,8 +29,7 @@ CONFIG = dict(
     )
 )
 
-os.environ.update(dict(DOCKER_TAG=CONFIG['docker']['tag']))
-
+util.export_docker_tag()
 
 ns = Collection()
 for c in COLLECTIONS:
