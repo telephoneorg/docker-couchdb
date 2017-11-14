@@ -56,7 +56,7 @@ def deepupdate(target, src):
             if not k in target:
                 target[k] = copy.deepcopy(v)
             else:
-                deepupdate(target[k], v)
+                target[k] = deepupdate(target[k], v)
         else:
             if not k in target:
                 target[k] = copy.copy(v)
