@@ -21,7 +21,7 @@ notifications:
     on_success: always
     on_failure: always
 
-before_install: pip install --upgrade docker-compose invoke
+before_install: pip install --upgrade docker-compose invoke pyyaml
 
 install: inv dc.build
 script: inv test
